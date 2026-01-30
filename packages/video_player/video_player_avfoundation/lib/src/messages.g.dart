@@ -77,6 +77,7 @@ class CreationOptions {
   CreationOptions({
     required this.uri,
     required this.httpHeaders,
+    required this.allowExternalPlayback,
     this.backgroundPlayback,
   });
 
@@ -84,11 +85,19 @@ class CreationOptions {
 
   Map<String, String> httpHeaders;
 
+  /// Whether to allow video playback on external displays (e.g., AirPlay).
+  bool allowExternalPlayback;
+
   /// Background playback configuration (optional).
   BackgroundPlaybackMessage? backgroundPlayback;
 
   List<Object?> _toList() {
-    return <Object?>[uri, httpHeaders, backgroundPlayback];
+    return <Object?>[
+      uri,
+      httpHeaders,
+      allowExternalPlayback,
+      backgroundPlayback,
+    ];
   }
 
   Object encode() {
@@ -101,7 +110,8 @@ class CreationOptions {
       uri: result[0]! as String,
       httpHeaders: (result[1] as Map<Object?, Object?>?)!
           .cast<String, String>(),
-      backgroundPlayback: result[2] as BackgroundPlaybackMessage?,
+      allowExternalPlayback: result[2]! as bool,
+      backgroundPlayback: result[3] as BackgroundPlaybackMessage?,
     );
   }
 

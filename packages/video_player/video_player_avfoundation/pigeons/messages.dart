@@ -26,10 +26,17 @@ class PlatformVideoViewCreationParams {
 }
 
 class CreationOptions {
-  CreationOptions({required this.uri, required this.httpHeaders});
+  CreationOptions({
+    required this.uri,
+    required this.httpHeaders,
+    required this.allowExternalPlayback,
+  });
 
   String uri;
   Map<String, String> httpHeaders;
+
+  /// Whether to allow video playback on external displays (e.g., AirPlay).
+  bool allowExternalPlayback;
 
   /// Background playback configuration (optional).
   BackgroundPlaybackMessage? backgroundPlayback;

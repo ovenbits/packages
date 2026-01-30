@@ -16,6 +16,11 @@ void main() {
     expect(options.mixWithOthers, false);
   });
 
+  test('VideoPlayerOptions allowExternalPlayback defaults to true', () {
+    final options = VideoPlayerOptions();
+    expect(options.allowExternalPlayback, true);
+  });
+
   test('VideoPlayerOptions notificationMetadata defaults to null', () {
     final options = VideoPlayerOptions();
     expect(options.notificationMetadata, isNull);

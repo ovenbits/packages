@@ -464,6 +464,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       viewType: viewType,
       allowBackgroundPlayback:
           videoPlayerOptions?.allowBackgroundPlayback ?? false,
+      allowExternalPlayback: videoPlayerOptions?.allowExternalPlayback ?? true,
       notificationMetadata: videoPlayerOptions?.notificationMetadata,
     );
 
