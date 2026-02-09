@@ -232,7 +232,7 @@ static void upgradeAudioSessionCategory(AVAudioSessionCategory requestedCategory
                                [weakSelf.registrar.textures unregisterTexture:textureIdentifier];
                              }
                                   backgroundPlayback:options.backgroundPlayback
-                             allowExternalPlayback:options.allowExternalPlayback];
+                               allowExternalPlayback:options.allowExternalPlayback];
     return [FVPTexturePlayerIds makeWithPlayerId:playerIdentifier textureId:textureIdentifier];
   } @catch (NSException *exception) {
     *error = [FlutterError errorWithCode:@"video_player" message:exception.reason details:nil];

@@ -1,3 +1,7 @@
+## 2.10.1
+
+* Enables ExoPlayer decoder fallback to fix video playback on Samsung Exynos devices.
+
 ## 2.10.0
 
 * Adds background playback with system media notification support.
