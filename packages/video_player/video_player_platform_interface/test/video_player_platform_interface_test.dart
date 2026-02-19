@@ -116,4 +116,57 @@ void main() {
       expect(string, contains('Test Title'));
     });
   });
+
+  test(
+    'default implementation isPictureInPictureSupported returns false',
+    () async {
+      await expectLater(
+        initialInstance.isPictureInPictureSupported(),
+        completion(false),
+      );
+    },
+  );
+
+  test(
+    'default implementation startPictureInPicture throws unimplemented',
+    () async {
+      await expectLater(
+        () => initialInstance.startPictureInPicture(1),
+        throwsUnimplementedError,
+      );
+    },
+  );
+
+  test(
+    'default implementation stopPictureInPicture throws unimplemented',
+    () async {
+      await expectLater(
+        () => initialInstance.stopPictureInPicture(1),
+        throwsUnimplementedError,
+      );
+    },
+  );
+
+  test(
+    'default implementation setAutoPictureInPicture throws unimplemented',
+    () async {
+      await expectLater(
+        () => initialInstance.setAutoPictureInPicture(1, true),
+        throwsUnimplementedError,
+      );
+    },
+  );
+
+  test(
+    'default implementation setPictureInPictureActions throws unimplemented',
+    () async {
+      await expectLater(
+        () => initialInstance.setPictureInPictureActions(
+          1,
+          const <PictureInPictureAction>[],
+        ),
+        throwsUnimplementedError,
+      );
+    },
+  );
 }

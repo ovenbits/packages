@@ -48,9 +48,13 @@ class VideoPlayer {
   final StreamController<VideoEvent> _eventController;
   final web.HTMLVideoElement _videoElement;
   web.EventHandler? _onContextMenu;
+  web.EventHandler? _onEnterPictureInPicture;
+  web.EventHandler? _onLeavePictureInPicture;
+  web.EventHandler? _onVisibilityChange;
 
   bool _isInitialized = false;
   bool _isBuffering = false;
+  bool _autoPictureInPicture = false;
 
   /// Returns the [Stream] of [VideoEvent]s from the inner [web.HTMLVideoElement].
   Stream<VideoEvent> get events => _eventController.stream;
@@ -127,6 +131,35 @@ class VideoPlayer {
       setBuffering(false);
       _eventController.add(VideoEvent(eventType: VideoEventType.completed));
     });
+
+    _onEnterPictureInPicture = ((web.Event _) {
+      _eventController.add(
+        VideoEvent(eventType: VideoEventType.pictureInPictureStarted),
+      );
+    }).toJS;
+    _videoElement.addEventListener(
+      'enterpictureinpicture',
+      _onEnterPictureInPicture,
+    );
+
+    _onLeavePictureInPicture = ((web.Event _) {
+      _eventController.add(
+        VideoEvent(eventType: VideoEventType.pictureInPictureStopped),
+      );
+    }).toJS;
+    _videoElement.addEventListener(
+      'leavepictureinpicture',
+      _onLeavePictureInPicture,
+    );
+
+    _onVisibilityChange = ((web.Event _) {
+      if (_autoPictureInPicture &&
+          web.document.visibilityState == 'hidden' &&
+          !_videoElement.paused) {
+        requestPictureInPicture();
+      }
+    }).toJS;
+    web.document.addEventListener('visibilitychange', _onVisibilityChange);
 
     // The `src` of the _videoElement is the last property that is set, so all
     // the listeners for the events that the plugin cares about are attached.
@@ -283,12 +316,178 @@ class VideoPlayer {
     _videoElement.removeAttribute('poster');
   }
 
+  /// Requests the browser to enter Picture-in-Picture mode.
+  ///
+  /// The call to `requestPictureInPicture()` on the video element happens
+  /// synchronously (before the first `await`) to preserve the browser's
+  /// transient user activation, which is required for PiP.
+  ///
+  /// Throws a [PlatformException] if the browser rejects the request (e.g.,
+  /// no user gesture, unsupported, or permissions policy). The caller is
+  /// expected to handle this as a non-fatal error.
+  Future<void> requestPictureInPicture() async {
+    try {
+      await _videoElement.requestPictureInPicture().toDart;
+    } catch (e) {
+      if (e is web.DOMException) {
+        throw PlatformException(
+          code: e.name,
+          message: e.message.isNotEmpty
+              ? e.message
+              : 'Failed to enter Picture-in-Picture mode.',
+          details: 'requestPictureInPicture() rejected by browser.',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Exits Picture-in-Picture mode.
+  ///
+  /// Throws a [PlatformException] if the browser rejects the request.
+  /// The caller is expected to handle this as a non-fatal error.
+  Future<void> exitPictureInPicture() async {
+    if (web.document.pictureInPictureElement == null) {
+      return;
+    }
+    try {
+      await web.document.exitPictureInPicture().toDart;
+    } catch (e) {
+      if (e is web.DOMException) {
+        throw PlatformException(
+          code: e.name,
+          message: e.message.isNotEmpty
+              ? e.message
+              : 'Failed to exit Picture-in-Picture mode.',
+          details: 'exitPictureInPicture() rejected by browser.',
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Sets whether the video should automatically enter PiP mode when the page
+  /// is hidden (e.g. user switches tabs).
+  // ignore: use_setters_to_change_properties
+  void setAutoPictureInPicture(bool enabled) {
+    _autoPictureInPicture = enabled;
+  }
+
+  /// Returns whether Picture-in-Picture is supported in the current browser.
+  bool isPictureInPictureSupported() {
+    try {
+      return web.document.pictureInPictureEnabled;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Sets Picture-in-Picture actions using the Media Session API.
+  ///
+  /// Each action type is mapped to a Media Session action handler that
+  /// performs the corresponding operation on the video element. Passing an
+  /// empty list clears all previously set handlers.
+  void setPictureInPictureActions(List<PictureInPictureAction> actions) {
+    try {
+      final mediaSession = web.window.navigator.mediaSession;
+
+      // Clear any previously set handlers by setting them to null first.
+      for (final String name in _activeMediaSessionActions) {
+        mediaSession.setActionHandler(name, null);
+      }
+      _activeMediaSessionActions.clear();
+
+      for (final PictureInPictureAction action in actions) {
+        final String actionName = switch (action.type) {
+          PictureInPictureActionType.play => 'play',
+          PictureInPictureActionType.pause => 'pause',
+          PictureInPictureActionType.skipForward => 'seekforward',
+          PictureInPictureActionType.skipBackward => 'seekbackward',
+          PictureInPictureActionType.nextTrack => 'nexttrack',
+          PictureInPictureActionType.previousTrack => 'previoustrack',
+        };
+
+        final web.MediaSessionActionHandler handler =
+            _createMediaSessionHandler(action.type);
+        mediaSession.setActionHandler(actionName, handler);
+        _activeMediaSessionActions.add(actionName);
+      }
+    } catch (_) {
+      // Media Session API may not be available.
+    }
+  }
+
+  /// Tracks which Media Session action names are currently set so they
+  /// can be properly cleared on update or dispose.
+  final Set<String> _activeMediaSessionActions = <String>{};
+
+  /// Creates a [web.MediaSessionActionHandler] for the given action type
+  /// that performs the corresponding operation on the video element.
+  web.MediaSessionActionHandler _createMediaSessionHandler(
+    PictureInPictureActionType type,
+  ) {
+    switch (type) {
+      case PictureInPictureActionType.play:
+        return ((JSAny? details) {
+          _videoElement.play();
+        }).toJS;
+      case PictureInPictureActionType.pause:
+        return ((JSAny? details) {
+          _videoElement.pause();
+        }).toJS;
+      case PictureInPictureActionType.skipForward:
+        return ((JSAny? details) {
+          const double defaultSkipSeconds = 10.0;
+          _videoElement.currentTime += defaultSkipSeconds;
+        }).toJS;
+      case PictureInPictureActionType.skipBackward:
+        return ((JSAny? details) {
+          const double defaultSkipSeconds = 10.0;
+          _videoElement.currentTime -= defaultSkipSeconds;
+        }).toJS;
+      case PictureInPictureActionType.nextTrack:
+        // No-op: next/previous track are application-level concepts
+        // that the player cannot handle on its own.
+        return ((JSAny? details) {}).toJS;
+      case PictureInPictureActionType.previousTrack:
+        return ((JSAny? details) {}).toJS;
+    }
+  }
+
   /// Disposes of the current [web.HTMLVideoElement].
   void dispose() {
     _videoElement.removeAttribute('src');
     if (_onContextMenu != null) {
       _videoElement.removeEventListener('contextmenu', _onContextMenu);
       _onContextMenu = null;
+    }
+    if (_onEnterPictureInPicture != null) {
+      _videoElement.removeEventListener(
+        'enterpictureinpicture',
+        _onEnterPictureInPicture,
+      );
+      _onEnterPictureInPicture = null;
+    }
+    if (_onLeavePictureInPicture != null) {
+      _videoElement.removeEventListener(
+        'leavepictureinpicture',
+        _onLeavePictureInPicture,
+      );
+      _onLeavePictureInPicture = null;
+    }
+    if (_onVisibilityChange != null) {
+      web.document.removeEventListener('visibilitychange', _onVisibilityChange);
+      _onVisibilityChange = null;
+    }
+    // Clear any active Media Session action handlers.
+    try {
+      final mediaSession = web.window.navigator.mediaSession;
+      for (final String name in _activeMediaSessionActions) {
+        mediaSession.setActionHandler(name, null);
+      }
+      _activeMediaSessionActions.clear();
+    } catch (_) {
+      // Media Session API may not be available.
     }
     _videoElement.load();
   }

@@ -4,8 +4,21 @@
 
 package io.flutter.plugins.videoplayer;
 
+import android.app.Activity;
+import android.app.PictureInPictureParams;
+import android.app.RemoteAction;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.ComponentCallbacks;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.res.Configuration;
+import android.graphics.drawable.Icon;
+import android.os.Build;
 import android.util.LongSparseArray;
+import android.util.Rational;
+import androidx.media3.common.VideoSize;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
@@ -13,19 +26,28 @@ import androidx.media3.common.util.UnstableApi;
 import io.flutter.FlutterInjector;
 import io.flutter.Log;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugins.videoplayer.platformview.PlatformVideoViewFactory;
 import io.flutter.plugins.videoplayer.platformview.PlatformViewVideoPlayer;
 import io.flutter.plugins.videoplayer.texture.TextureVideoPlayer;
 import io.flutter.view.TextureRegistry;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Android platform implementation of the VideoPlayerPlugin. */
-public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
+public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidVideoPlayerApi {
   private static final String TAG = "VideoPlayerPlugin";
   private final LongSparseArray<VideoPlayer> videoPlayers = new LongSparseArray<>();
   private FlutterState flutterState;
   private final VideoPlayerOptions sharedOptions = new VideoPlayerOptions();
   private long nextPlayerIdentifier = 1;
+  @Nullable private Activity activity;
+  private boolean isInPictureInPictureMode = false;
+  private final LongSparseArray<Boolean> autoPipPlayers = new LongSparseArray<>();
+  @Nullable private BroadcastReceiver pipActionReceiver;
+  @Nullable private ComponentCallbacks pipComponentCallbacks;
 
   /** Register this with the v2 embedding for the plugin to respond to lifecycle callbacks. */
   public VideoPlayerPlugin() {}
@@ -199,6 +221,185 @@ public class VideoPlayerPlugin implements FlutterPlugin, AndroidVideoPlayerApi {
     return packageName == null
         ? flutterState.keyForAsset.get(asset)
         : flutterState.keyForAssetAndPackageName.get(asset, packageName);
+  }
+
+  @Override
+  public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
+    activity = binding.getActivity();
+    registerPipComponentCallbacks();
+  }
+
+  @Override
+  public void onDetachedFromActivityForConfigChanges() {
+    unregisterPipComponentCallbacks();
+    activity = null;
+  }
+
+  @Override
+  public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
+    activity = binding.getActivity();
+    registerPipComponentCallbacks();
+  }
+
+  @Override
+  public void onDetachedFromActivity() {
+    unregisterPipComponentCallbacks();
+    activity = null;
+  }
+
+  private void registerPipComponentCallbacks() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity == null) {
+      return;
+    }
+    pipComponentCallbacks = new ComponentCallbacks() {
+      @Override
+      public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        boolean currentlyInPip = checkIsInPictureInPictureMode();
+        if (currentlyInPip != isInPictureInPictureMode) {
+          isInPictureInPictureMode = currentlyInPip;
+          notifyPictureInPictureModeChanged(currentlyInPip);
+        }
+      }
+
+      @Override
+      public void onLowMemory() {}
+    };
+    activity.registerComponentCallbacks(pipComponentCallbacks);
+  }
+
+  private void unregisterPipComponentCallbacks() {
+    if (pipComponentCallbacks != null && activity != null) {
+      activity.unregisterComponentCallbacks(pipComponentCallbacks);
+      pipComponentCallbacks = null;
+    }
+  }
+
+  private void notifyPictureInPictureModeChanged(boolean isInPip) {
+    for (int i = 0; i < videoPlayers.size(); i++) {
+      videoPlayers.valueAt(i).videoPlayerEvents.onPictureInPictureModeChanged(isInPip);
+    }
+  }
+
+  @Override
+  public boolean isPictureInPictureSupported() {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity != null;
+  }
+
+  @Override
+  public void startPictureInPicture(long playerId, @NonNull List<PipAction> actions) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity == null) {
+      return;
+    }
+    PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+    builder.setAspectRatio(getVideoAspectRatio(playerId));
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      builder.setAutoEnterEnabled(false);
+    }
+    List<RemoteAction> remoteActions = buildRemoteActions(actions);
+    if (!remoteActions.isEmpty()) {
+      builder.setActions(remoteActions);
+    }
+    boolean entered = activity.enterPictureInPictureMode(builder.build());
+    if (entered && !isInPictureInPictureMode) {
+      isInPictureInPictureMode = true;
+      notifyPictureInPictureModeChanged(true);
+    }
+  }
+
+  @Override
+  public void stopPictureInPicture(long playerId) {
+    if (activity != null && isInPictureInPictureMode) {
+      activity.moveTaskToBack(false);
+    }
+  }
+
+  @Override
+  public void setAutoPictureInPicture(long playerId, boolean enabled) {
+    autoPipPlayers.put(playerId, enabled);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && activity != null) {
+      PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+      builder.setAutoEnterEnabled(enabled);
+      builder.setAspectRatio(getVideoAspectRatio(playerId));
+      activity.setPictureInPictureParams(builder.build());
+    }
+  }
+
+  @Override
+  public void setPictureInPictureActions(long playerId, @NonNull List<PipAction> actions) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity == null) {
+      return;
+    }
+    List<RemoteAction> remoteActions = buildRemoteActions(actions);
+    PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+    builder.setActions(remoteActions);
+    builder.setAspectRatio(getVideoAspectRatio(playerId));
+    activity.setPictureInPictureParams(builder.build());
+  }
+
+  @NonNull
+  private List<RemoteAction> buildRemoteActions(@NonNull List<PipAction> actions) {
+    List<RemoteAction> remoteActions = new ArrayList<>();
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity == null) {
+      return remoteActions;
+    }
+    int requestCode = 0;
+    for (PipAction action : actions) {
+      int iconRes = android.R.drawable.ic_media_play;
+      String intentAction = "io.flutter.plugins.videoplayer.PIP_ACTION";
+      switch (action.getType()) {
+        case PLAY:
+          iconRes = android.R.drawable.ic_media_play;
+          intentAction += ".play";
+          break;
+        case PAUSE:
+          iconRes = android.R.drawable.ic_media_pause;
+          intentAction += ".pause";
+          break;
+        case SKIP_FORWARD:
+          iconRes = android.R.drawable.ic_media_ff;
+          intentAction += ".skipForward";
+          break;
+        case SKIP_BACKWARD:
+          iconRes = android.R.drawable.ic_media_rew;
+          intentAction += ".skipBackward";
+          break;
+        case NEXT_TRACK:
+          iconRes = android.R.drawable.ic_media_next;
+          intentAction += ".nextTrack";
+          break;
+        case PREVIOUS_TRACK:
+          iconRes = android.R.drawable.ic_media_previous;
+          intentAction += ".previousTrack";
+          break;
+      }
+      Icon icon = Icon.createWithResource(activity, iconRes);
+      Intent intent = new Intent(intentAction);
+      PendingIntent pendingIntent =
+          PendingIntent.getBroadcast(
+              activity, requestCode++, intent, PendingIntent.FLAG_IMMUTABLE);
+      remoteActions.add(
+          new RemoteAction(icon, action.getLabel(), action.getLabel(), pendingIntent));
+    }
+    return remoteActions;
+  }
+
+  @NonNull
+  private Rational getVideoAspectRatio(long playerId) {
+    VideoPlayer player = videoPlayers.get(playerId);
+    if (player != null) {
+      VideoSize videoSize = player.getExoPlayer().getVideoSize();
+      if (videoSize.width > 0 && videoSize.height > 0) {
+        return new Rational(videoSize.width, videoSize.height);
+      }
+    }
+    return new Rational(16, 9);
+  }
+
+  private boolean checkIsInPictureInPictureMode() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity != null) {
+      return activity.isInPictureInPictureMode();
+    }
+    return false;
   }
 
   private interface KeyForAssetFn {

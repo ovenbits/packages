@@ -104,6 +104,8 @@ abstract class AVFoundationVideoPlayerApi {
   void setMixWithOthers(bool mixWithOthers);
   @ObjCSelector('fileURLForAssetWithName:package:')
   String? getAssetUrl(String asset, String? package);
+  @ObjCSelector('isPictureInPictureSupported')
+  bool isPictureInPictureSupported();
 }
 
 @HostApi()
@@ -126,4 +128,10 @@ abstract class VideoPlayerInstanceApi {
   List<MediaSelectionAudioTrackData> getAudioTracks();
   @ObjCSelector('selectAudioTrackAtIndex:')
   void selectAudioTrack(int trackIndex);
+  @ObjCSelector('startPictureInPicture')
+  void startPictureInPicture();
+  @ObjCSelector('stopPictureInPicture')
+  void stopPictureInPicture();
+  @ObjCSelector('setAutoPictureInPicture:')
+  void setAutoPictureInPicture(bool enabled);
 }

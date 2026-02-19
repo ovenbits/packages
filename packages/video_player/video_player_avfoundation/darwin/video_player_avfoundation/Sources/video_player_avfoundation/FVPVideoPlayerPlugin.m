@@ -6,6 +6,7 @@
 #import "./include/video_player_avfoundation/FVPVideoPlayerPlugin_Test.h"
 
 @import AVFoundation;
+@import AVKit;
 
 #import "./include/video_player_avfoundation/FVPAVFactory.h"
 #import "./include/video_player_avfoundation/FVPAssetProvider.h"
@@ -310,6 +311,10 @@ static void upgradeAudioSessionCategory(NSObject<FVPAVAudioSession> *session,
     return nil;
   }
   return [NSURL fileURLWithPath:path].absoluteString;
+}
+
+- (nullable NSNumber *)isPictureInPictureSupported:(FlutterError *_Nullable *_Nonnull)error {
+  return @([AVPictureInPictureController isPictureInPictureSupported]);
 }
 
 /// Returns the AVPlayerItem corresponding to the given player creation options.

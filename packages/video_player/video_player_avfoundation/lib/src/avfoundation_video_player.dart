@@ -235,6 +235,35 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
   }
 
   @override
+  Future<bool> isPictureInPictureSupported() {
+    return _api.isPictureInPictureSupported();
+  }
+
+  @override
+  Future<void> startPictureInPicture(int playerId) {
+    return _playerWith(id: playerId).startPictureInPicture();
+  }
+
+  @override
+  Future<void> stopPictureInPicture(int playerId) {
+    return _playerWith(id: playerId).stopPictureInPicture();
+  }
+
+  @override
+  Future<void> setAutoPictureInPicture(int playerId, bool enabled) {
+    return _playerWith(id: playerId).setAutoPictureInPicture(enabled);
+  }
+
+  @override
+  Future<void> setPictureInPictureActions(
+    int playerId,
+    List<PictureInPictureAction> actions,
+  ) async {
+    // AVFoundation on iOS/macOS does not support custom PiP actions.
+    // The system provides default controls in PiP mode.
+  }
+
+  @override
   Widget buildView(int playerId) {
     return buildViewWithOptions(VideoViewOptions(playerId: playerId));
   }
@@ -311,6 +340,13 @@ class _PlayerInstance {
   Future<void> selectAudioTrack(int trackIndex) =>
       _api.selectAudioTrack(trackIndex);
 
+  Future<void> startPictureInPicture() => _api.startPictureInPicture();
+
+  Future<void> stopPictureInPicture() => _api.stopPictureInPicture();
+
+  Future<void> setAutoPictureInPicture(bool enabled) =>
+      _api.setAutoPictureInPicture(enabled);
+
   Stream<VideoEvent> get videoEvents {
     _eventSubscription ??= _eventChannel.receiveBroadcastStream().listen(
       _onStreamEvent,
@@ -352,6 +388,12 @@ class _PlayerInstance {
       'isPlayingStateUpdate' => VideoEvent(
         eventType: VideoEventType.isPlayingStateUpdate,
         isPlaying: map['isPlaying'] as bool,
+      ),
+      'pictureInPictureStarted' => VideoEvent(
+        eventType: VideoEventType.pictureInPictureStarted,
+      ),
+      'pictureInPictureStopped' => VideoEvent(
+        eventType: VideoEventType.pictureInPictureStopped,
       ),
       _ => VideoEvent(eventType: VideoEventType.unknown),
     });

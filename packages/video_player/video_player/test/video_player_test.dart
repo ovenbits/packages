@@ -131,6 +131,23 @@ class FakeController extends ValueNotifier<VideoPlayerValue>
   }
 
   String? selectedAudioTrackId;
+
+  @override
+  Future<bool> isPictureInPictureSupported() async => false;
+
+  @override
+  Future<void> startPictureInPicture() async {}
+
+  @override
+  Future<void> stopPictureInPicture() async {}
+
+  @override
+  Future<void> setAutoPictureInPicture(bool enabled) async {}
+
+  @override
+  Future<void> setPictureInPictureActions(
+    List<PictureInPictureAction> actions,
+  ) async {}
 }
 
 Future<ClosedCaptionFile> _loadClosedCaption() async =>
@@ -1476,7 +1493,8 @@ void main() {
         'volume: 0.5, '
         'playbackSpeed: 1.5, '
         'errorDescription: null, '
-        'isCompleted: false),',
+        'isCompleted: false, '
+        'isPictureInPictureActive: false),',
       );
     });
 
@@ -1917,5 +1935,34 @@ class FakeVideoPlayerPlatform extends VideoPlayerPlatform {
     NotificationMetadata? notificationMetadata,
   }) async {
     calls.add('setBackgroundPlayback');
+  }
+
+  @override
+  Future<bool> isPictureInPictureSupported() async {
+    calls.add('isPictureInPictureSupported');
+    return false;
+  }
+
+  @override
+  Future<void> startPictureInPicture(int playerId) async {
+    calls.add('startPictureInPicture');
+  }
+
+  @override
+  Future<void> stopPictureInPicture(int playerId) async {
+    calls.add('stopPictureInPicture');
+  }
+
+  @override
+  Future<void> setAutoPictureInPicture(int playerId, bool enabled) async {
+    calls.add('setAutoPictureInPicture');
+  }
+
+  @override
+  Future<void> setPictureInPictureActions(
+    int playerId,
+    List<PictureInPictureAction> actions,
+  ) async {
+    calls.add('setPictureInPictureActions');
   }
 }

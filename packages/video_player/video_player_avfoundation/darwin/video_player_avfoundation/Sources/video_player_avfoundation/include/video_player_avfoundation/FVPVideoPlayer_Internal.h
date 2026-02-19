@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 @import AVFoundation;
+@import AVKit;
 
 #import "FVPAVFactory.h"
 #import "FVPVideoEventListener.h"
@@ -12,9 +13,11 @@
 NS_ASSUME_NONNULL_BEGIN
 
 /// Interface intended for use by subclasses, but not other callers.
-@interface FVPVideoPlayer ()
+@interface FVPVideoPlayer () <AVPictureInPictureControllerDelegate>
 /// The pixel buffer source associated with this video player.
 @property(nonatomic, readonly) NSObject<FVPPixelBufferSource> *pixelBufferSource;
+/// The Picture-in-Picture controller, if supported.
+@property(nonatomic, nullable) AVPictureInPictureController *pipController;
 /// The view provider, to obtain view information from.
 @property(nonatomic, readonly, nullable) NSObject<FVPViewProvider> *viewProvider;
 /// The preferred transform for the video. It can be used to handle the rotation of the video.
@@ -35,6 +38,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Updates the playing state of the video player.
 - (void)updatePlayingState;
+
+/// Returns the AVPlayerLayer to use for Picture-in-Picture.
+/// The base class creates a minimal standalone layer. Subclasses should override this
+/// to return their own existing player layer (e.g., the texture-based player's layer).
+- (AVPlayerLayer *)playerLayerForPictureInPicture;
 @end
 
 NS_ASSUME_NONNULL_END

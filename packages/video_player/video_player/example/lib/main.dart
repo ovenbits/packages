@@ -8,6 +8,7 @@
 /// video.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -237,6 +238,7 @@ class _ButterFlyAssetVideo extends StatefulWidget {
 
 class _ButterFlyAssetVideoState extends State<_ButterFlyAssetVideo> {
   late VideoPlayerController _controller;
+  OverlayEntry? _pipOverlay;
 
   @override
   void initState() {
@@ -244,18 +246,48 @@ class _ButterFlyAssetVideoState extends State<_ButterFlyAssetVideo> {
     _controller = VideoPlayerController.asset(
       'assets/Butterfly-209.mp4',
       viewType: widget.viewType,
+      videoPlayerOptions: VideoPlayerOptions(allowBackgroundPlayback: true),
     );
 
     _controller.addListener(() {
       setState(() {});
+      _updatePipOverlay();
     });
     _controller.setLooping(true);
     _controller.initialize().then((_) => setState(() {}));
     _controller.play();
   }
 
+  void _updatePipOverlay() {
+    if (!mounted) {
+      return;
+    }
+    final bool isPip = _controller.value.isPictureInPictureActive;
+    if (isPip &&
+        _pipOverlay == null &&
+        defaultTargetPlatform == TargetPlatform.android) {
+      _pipOverlay = OverlayEntry(
+        builder: (_) => ColoredBox(
+          color: Colors.black,
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            ),
+          ),
+        ),
+      );
+      Overlay.of(context).insert(_pipOverlay!);
+    } else if (!isPip && _pipOverlay != null) {
+      _pipOverlay?.remove();
+      _pipOverlay = null;
+    }
+  }
+
   @override
   void dispose() {
+    _pipOverlay?.remove();
+    _pipOverlay = null;
     _controller.dispose();
     super.dispose();
   }
@@ -298,6 +330,7 @@ class _BumbleBeeRemoteVideo extends StatefulWidget {
 
 class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
   late VideoPlayerController _controller;
+  OverlayEntry? _pipOverlay;
 
   Future<ClosedCaptionFile> _loadCaptions() async {
     final String fileContents = await DefaultAssetBundle.of(
@@ -316,19 +349,51 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
         'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
       ),
       closedCaptionFile: _loadCaptions(),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: true,
+      ),
       viewType: widget.viewType,
     );
 
     _controller.addListener(() {
       setState(() {});
+      _updatePipOverlay();
     });
     _controller.setLooping(true);
     _controller.initialize();
   }
 
+  void _updatePipOverlay() {
+    if (!mounted) {
+      return;
+    }
+    final bool isPip = _controller.value.isPictureInPictureActive;
+    if (isPip &&
+        _pipOverlay == null &&
+        defaultTargetPlatform == TargetPlatform.android) {
+      _pipOverlay = OverlayEntry(
+        builder: (_) => ColoredBox(
+          color: Colors.black,
+          child: Center(
+            child: AspectRatio(
+              aspectRatio: _controller.value.aspectRatio,
+              child: VideoPlayer(_controller),
+            ),
+          ),
+        ),
+      );
+      Overlay.of(context).insert(_pipOverlay!);
+    } else if (!isPip && _pipOverlay != null) {
+      _pipOverlay?.remove();
+      _pipOverlay = null;
+    }
+  }
+
   @override
   void dispose() {
+    _pipOverlay?.remove();
+    _pipOverlay = null;
     _controller.dispose();
     super.dispose();
   }
@@ -357,6 +422,81 @@ class _BumbleBeeRemoteVideoState extends State<_BumbleBeeRemoteVideo> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PictureInPictureButton extends StatefulWidget {
+  const _PictureInPictureButton({required this.controller});
+
+  final VideoPlayerController controller;
+
+  @override
+  State<_PictureInPictureButton> createState() =>
+      _PictureInPictureButtonState();
+}
+
+class _PictureInPictureButtonState extends State<_PictureInPictureButton> {
+  bool _isPipSupported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onControllerUpdated);
+    _checkPipSupport();
+  }
+
+  @override
+  void didUpdateWidget(_PictureInPictureButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_onControllerUpdated);
+      widget.controller.addListener(_onControllerUpdated);
+      _checkPipSupport();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerUpdated);
+    super.dispose();
+  }
+
+  void _onControllerUpdated() {
+    if (widget.controller.value.isInitialized && !_isPipSupported) {
+      _checkPipSupport();
+    }
+  }
+
+  Future<void> _checkPipSupport() async {
+    final bool supported = await widget.controller
+        .isPictureInPictureSupported();
+    if (mounted && supported != _isPipSupported) {
+      setState(() {
+        _isPipSupported = supported;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isPipSupported) {
+      return const SizedBox.shrink();
+    }
+    final bool isActive = widget.controller.value.isPictureInPictureActive;
+    return IconButton(
+      icon: Icon(
+        isActive ? Icons.picture_in_picture_alt : Icons.picture_in_picture,
+        color: Colors.white,
+      ),
+      tooltip: isActive ? 'Exit PiP' : 'Enter PiP',
+      onPressed: () {
+        if (isActive) {
+          widget.controller.stopPictureInPicture();
+        } else {
+          widget.controller.startPictureInPicture();
+        }
+      },
     );
   }
 }
@@ -442,6 +582,10 @@ class _ControlsOverlay extends StatelessWidget {
               child: Text('${controller.value.captionOffset.inMilliseconds}ms'),
             ),
           ),
+        ),
+        Align(
+          alignment: Alignment.bottomLeft,
+          child: _PictureInPictureButton(controller: controller),
         ),
         Align(
           alignment: Alignment.topRight,

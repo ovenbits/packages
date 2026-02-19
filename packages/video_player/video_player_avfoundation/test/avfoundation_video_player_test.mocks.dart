@@ -106,6 +106,15 @@ class MockAVFoundationVideoPlayerApi extends _i1.Mock
             returnValueForMissingStub: _i4.Future<String?>.value(),
           )
           as _i4.Future<String?>);
+
+  @override
+  _i4.Future<bool> isPictureInPictureSupported() =>
+      (super.noSuchMethod(
+            Invocation.method(#isPictureInPictureSupported, []),
+            returnValue: _i4.Future<bool>.value(false),
+            returnValueForMissingStub: _i4.Future<bool>.value(false),
+          )
+          as _i4.Future<bool>);
 }
 
 /// A class which mocks [VideoPlayerInstanceApi].
@@ -201,6 +210,15 @@ class MockVideoPlayerInstanceApi extends _i1.Mock
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> setBackgroundPlayback(_i2.BackgroundPlaybackMessage? msg) =>
+      (super.noSuchMethod(
+            Invocation.method(#setBackgroundPlayback, [msg]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   _i4.Future<List<_i2.MediaSelectionAudioTrackData>> getAudioTracks() =>
       (super.noSuchMethod(
             Invocation.method(#getAudioTracks, []),
@@ -219,6 +237,33 @@ class MockVideoPlayerInstanceApi extends _i1.Mock
   _i4.Future<void> selectAudioTrack(int? trackIndex) =>
       (super.noSuchMethod(
             Invocation.method(#selectAudioTrack, [trackIndex]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> startPictureInPicture() =>
+      (super.noSuchMethod(
+            Invocation.method(#startPictureInPicture, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> stopPictureInPicture() =>
+      (super.noSuchMethod(
+            Invocation.method(#stopPictureInPicture, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> setAutoPictureInPicture(bool? enabled) =>
+      (super.noSuchMethod(
+            Invocation.method(#setAutoPictureInPicture, [enabled]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
