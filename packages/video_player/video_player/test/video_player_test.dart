@@ -10,11 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:video_player/video_player.dart';
-import 'package:video_player_platform_interface/video_player_platform_interface.dart'
-    hide VideoAudioTrack;
-import 'package:video_player_platform_interface/video_player_platform_interface.dart'
-    as platform_interface
-    show VideoAudioTrack;
+import 'package:video_player_platform_interface/video_player_platform_interface.dart';
 
 const String _localhost = 'https://127.0.0.1';
 final Uri _localhostUri = Uri.parse(_localhost);
@@ -1878,18 +1874,16 @@ class FakeVideoPlayerPlatform extends VideoPlayerPlatform {
   }
 
   @override
-  Future<List<platform_interface.VideoAudioTrack>> getAudioTracks(
-    int playerId,
-  ) async {
+  Future<List<VideoAudioTrack>> getAudioTracks(int playerId) async {
     calls.add('getAudioTracks');
-    return <platform_interface.VideoAudioTrack>[
-      const platform_interface.VideoAudioTrack(
+    return <VideoAudioTrack>[
+      const VideoAudioTrack(
         id: 'track_1',
         label: 'English',
         language: 'en',
         isSelected: true,
       ),
-      const platform_interface.VideoAudioTrack(
+      const VideoAudioTrack(
         id: 'track_2',
         label: 'Spanish',
         language: 'es',
@@ -1899,7 +1893,7 @@ class FakeVideoPlayerPlatform extends VideoPlayerPlatform {
         channelCount: 2,
         codec: 'aac',
       ),
-      const platform_interface.VideoAudioTrack(
+      const VideoAudioTrack(
         id: 'track_3',
         label: 'French',
         language: 'fr',
@@ -1922,20 +1916,6 @@ class FakeVideoPlayerPlatform extends VideoPlayerPlatform {
   }
 
   final Map<int, String> selectedAudioTrackIds = <int, String>{};
-
-  @override
-  bool isBackgroundPlaybackSupportAvailable() {
-    return true;
-  }
-
-  @override
-  Future<void> setBackgroundPlayback(
-    int playerId, {
-    required bool enableBackground,
-    NotificationMetadata? notificationMetadata,
-  }) async {
-    calls.add('setBackgroundPlayback');
-  }
 
   @override
   Future<bool> isPictureInPictureSupported() async {

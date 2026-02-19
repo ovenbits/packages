@@ -389,7 +389,7 @@ class VideoPlayer {
   /// empty list clears all previously set handlers.
   void setPictureInPictureActions(List<PictureInPictureAction> actions) {
     try {
-      final mediaSession = web.window.navigator.mediaSession;
+      final web.MediaSession mediaSession = web.window.navigator.mediaSession;
 
       // Clear any previously set handlers by setting them to null first.
       for (final String name in _activeMediaSessionActions) {
@@ -397,7 +397,7 @@ class VideoPlayer {
       }
       _activeMediaSessionActions.clear();
 
-      for (final PictureInPictureAction action in actions) {
+      for (final action in actions) {
         final String actionName = switch (action.type) {
           PictureInPictureActionType.play => 'play',
           PictureInPictureActionType.pause => 'pause',
@@ -437,12 +437,12 @@ class VideoPlayer {
         }).toJS;
       case PictureInPictureActionType.skipForward:
         return ((JSAny? details) {
-          const double defaultSkipSeconds = 10.0;
+          const defaultSkipSeconds = 10.0;
           _videoElement.currentTime += defaultSkipSeconds;
         }).toJS;
       case PictureInPictureActionType.skipBackward:
         return ((JSAny? details) {
-          const double defaultSkipSeconds = 10.0;
+          const defaultSkipSeconds = 10.0;
           _videoElement.currentTime -= defaultSkipSeconds;
         }).toJS;
       case PictureInPictureActionType.nextTrack:
@@ -481,7 +481,7 @@ class VideoPlayer {
     }
     // Clear any active Media Session action handlers.
     try {
-      final mediaSession = web.window.navigator.mediaSession;
+      final web.MediaSession mediaSession = web.window.navigator.mediaSession;
       for (final String name in _activeMediaSessionActions) {
         mediaSession.setActionHandler(name, null);
       }

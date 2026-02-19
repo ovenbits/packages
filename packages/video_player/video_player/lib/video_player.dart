@@ -20,6 +20,7 @@ export 'package:video_player_platform_interface/video_player_platform_interface.
         NotificationMetadata,
         PictureInPictureAction,
         PictureInPictureActionType,
+        VideoAudioTrack,
         VideoFormat,
         VideoPlayerOptions,
         VideoPlayerWebOptions,
@@ -761,6 +762,40 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
     value = value.copyWith(playbackSpeed: speed);
     await _applyPlaybackSpeed();
+  }
+
+  /// Returns the available audio tracks for the video.
+  ///
+  /// Returns an empty list if called before [initialize] completes.
+  /// Throws if the controller has been disposed.
+  Future<List<VideoAudioTrack>> getAudioTracks() async {
+    if (_isDisposed) {
+      throw StateError('Cannot get audio tracks after dispose');
+    }
+    if (_isDisposedOrNotInitialized) {
+      return <VideoAudioTrack>[];
+    }
+    return _videoPlayerPlatform.getAudioTracks(_playerId);
+  }
+
+  /// Selects the audio track with the given [trackId] for playback.
+  ///
+  /// Throws [StateError] if called before [initialize] completes.
+  Future<void> selectAudioTrack(String trackId) async {
+    if (_isDisposedOrNotInitialized) {
+      throw StateError(
+        'Cannot select audio track before initialization or after dispose',
+      );
+    }
+    await _videoPlayerPlatform.selectAudioTrack(_playerId, trackId);
+  }
+
+  /// Returns whether audio track selection is supported on this platform.
+  bool isAudioTrackSupportAvailable() {
+    if (_isDisposed) {
+      return false;
+    }
+    return _videoPlayerPlatform.isAudioTrackSupportAvailable();
   }
 
   /// Returns whether Picture-in-Picture mode is supported.
