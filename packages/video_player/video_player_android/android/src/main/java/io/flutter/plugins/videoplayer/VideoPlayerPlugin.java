@@ -5,23 +5,22 @@
 package io.flutter.plugins.videoplayer;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
 import android.app.RemoteAction;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ComponentCallbacks;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.drawable.Icon;
 import android.os.Build;
 import android.util.LongSparseArray;
 import android.util.Rational;
-import androidx.media3.common.VideoSize;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
+import androidx.media3.common.VideoSize;
 import androidx.media3.common.util.UnstableApi;
 import io.flutter.FlutterInjector;
 import io.flutter.Log;
@@ -251,19 +250,20 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity == null) {
       return;
     }
-    pipComponentCallbacks = new ComponentCallbacks() {
-      @Override
-      public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        boolean currentlyInPip = checkIsInPictureInPictureMode();
-        if (currentlyInPip != isInPictureInPictureMode) {
-          isInPictureInPictureMode = currentlyInPip;
-          notifyPictureInPictureModeChanged(currentlyInPip);
-        }
-      }
+    pipComponentCallbacks =
+        new ComponentCallbacks() {
+          @Override
+          public void onConfigurationChanged(@NonNull Configuration newConfig) {
+            boolean currentlyInPip = checkIsInPictureInPictureMode();
+            if (currentlyInPip != isInPictureInPictureMode) {
+              isInPictureInPictureMode = currentlyInPip;
+              notifyPictureInPictureModeChanged(currentlyInPip);
+            }
+          }
 
-      @Override
-      public void onLowMemory() {}
-    };
+          @Override
+          public void onLowMemory() {}
+        };
     activity.registerComponentCallbacks(pipComponentCallbacks);
   }
 
@@ -375,8 +375,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
       Icon icon = Icon.createWithResource(activity, iconRes);
       Intent intent = new Intent(intentAction);
       PendingIntent pendingIntent =
-          PendingIntent.getBroadcast(
-              activity, requestCode++, intent, PendingIntent.FLAG_IMMUTABLE);
+          PendingIntent.getBroadcast(activity, requestCode++, intent, PendingIntent.FLAG_IMMUTABLE);
       remoteActions.add(
           new RemoteAction(icon, action.getLabel(), action.getLabel(), pendingIntent));
     }

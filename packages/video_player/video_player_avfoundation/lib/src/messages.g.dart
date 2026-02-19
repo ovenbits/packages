@@ -89,7 +89,11 @@ class CreationOptions {
   BackgroundPlaybackMessage? backgroundPlayback;
 
   List<Object?> _toList() {
-    return <Object?>[uri, httpHeaders, backgroundPlayback];
+    return <Object?>[
+      uri,
+      httpHeaders,
+      backgroundPlayback,
+    ];
   }
 
   Object encode() {
@@ -254,12 +258,18 @@ class NotificationMetadataMessage {
   String? artUri;
 
   List<Object?> _toList() {
-    return <Object?>[id, title, album, artist, durationMs, artUri];
+    return <Object?>[
+      id,
+      title,
+      album,
+      artist,
+      durationMs,
+      artUri,
+    ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static NotificationMetadataMessage decode(Object result) {
     result as List<Object?>;
@@ -276,8 +286,7 @@ class NotificationMetadataMessage {
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) {
-    if (other is! NotificationMetadataMessage ||
-        other.runtimeType != runtimeType) {
+    if (other is! NotificationMetadataMessage || other.runtimeType != runtimeType) {
       return false;
     }
     if (identical(this, other)) {
@@ -288,7 +297,8 @@ class NotificationMetadataMessage {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
 
 /// Message for configuring background playback with media notification.
@@ -303,12 +313,14 @@ class BackgroundPlaybackMessage {
   NotificationMetadataMessage? notificationMetadata;
 
   List<Object?> _toList() {
-    return <Object?>[enableBackground, notificationMetadata];
+    return <Object?>[
+      enableBackground,
+      notificationMetadata,
+    ];
   }
 
   Object encode() {
-    return _toList();
-  }
+    return _toList();  }
 
   static BackgroundPlaybackMessage decode(Object result) {
     result as List<Object?>;
@@ -321,8 +333,7 @@ class BackgroundPlaybackMessage {
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
   bool operator ==(Object other) {
-    if (other is! BackgroundPlaybackMessage ||
-        other.runtimeType != runtimeType) {
+    if (other is! BackgroundPlaybackMessage || other.runtimeType != runtimeType) {
       return false;
     }
     if (identical(this, other)) {
@@ -333,8 +344,10 @@ class BackgroundPlaybackMessage {
 
   @override
   // ignore: avoid_equals_and_hash_code_on_mutable_classes
-  int get hashCode => Object.hashAll(_toList());
+  int get hashCode => Object.hashAll(_toList())
+;
 }
+
 
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
@@ -355,10 +368,10 @@ class _PigeonCodec extends StandardMessageCodec {
     }    else if (value is MediaSelectionAudioTrackData) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    } else if (value is NotificationMetadataMessage) {
+    }    else if (value is NotificationMetadataMessage) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    } else if (value is BackgroundPlaybackMessage) {
+    }    else if (value is BackgroundPlaybackMessage) {
       buffer.putUint8(134);
       writeValue(buffer, value.encode());
     } else {
@@ -377,9 +390,9 @@ class _PigeonCodec extends StandardMessageCodec {
         return TexturePlayerIds.decode(readValue(buffer)!);
       case 132: 
         return MediaSelectionAudioTrackData.decode(readValue(buffer)!);
-      case 133:
+      case 133: 
         return NotificationMetadataMessage.decode(readValue(buffer)!);
-      case 134:
+      case 134: 
         return BackgroundPlaybackMessage.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -728,31 +741,6 @@ class VideoPlayerInstanceApi {
       binaryMessenger: pigeonVar_binaryMessenger,
     );
     final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
-    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
-    if (pigeonVar_replyList == null) {
-      throw _createConnectionError(pigeonVar_channelName);
-    } else if (pigeonVar_replyList.length > 1) {
-      throw PlatformException(
-        code: pigeonVar_replyList[0]! as String,
-        message: pigeonVar_replyList[1] as String?,
-        details: pigeonVar_replyList[2],
-      );
-    } else {
-      return;
-    }
-  }
-
-  Future<void> setBackgroundPlayback(BackgroundPlaybackMessage msg) async {
-    final pigeonVar_channelName =
-        'dev.flutter.pigeon.video_player_avfoundation.VideoPlayerInstanceApi.setBackgroundPlayback$pigeonVar_messageChannelSuffix';
-    final pigeonVar_channel = BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
-    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
-      <Object?>[msg],
-    );
     final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
     if (pigeonVar_replyList == null) {
       throw _createConnectionError(pigeonVar_channelName);

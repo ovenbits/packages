@@ -634,14 +634,15 @@ data class NativeAudioTrackData (
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
-data class NotificationMetadataMessage(
-    val id: String,
-    val title: String? = null,
-    val album: String? = null,
-    val artist: String? = null,
-    val durationMs: Long? = null,
-    val artUri: String? = null
-) {
+data class NotificationMetadataMessage (
+  val id: String,
+  val title: String? = null,
+  val album: String? = null,
+  val artist: String? = null,
+  val durationMs: Long? = null,
+  val artUri: String? = null
+)
+ {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): NotificationMetadataMessage {
       val id = pigeonVar_list[0] as String
@@ -653,18 +654,16 @@ data class NotificationMetadataMessage(
       return NotificationMetadataMessage(id, title, album, artist, durationMs, artUri)
     }
   }
-
   fun toList(): List<Any?> {
     return listOf(
-        id,
-        title,
-        album,
-        artist,
-        durationMs,
-        artUri,
+      id,
+      title,
+      album,
+      artist,
+      durationMs,
+      artUri,
     )
   }
-
   override fun equals(other: Any?): Boolean {
     if (other !is NotificationMetadataMessage) {
       return false
@@ -672,8 +671,7 @@ data class NotificationMetadataMessage(
     if (this === other) {
       return true
     }
-    return MessagesPigeonUtils.deepEquals(toList(), other.toList())
-  }
+    return MessagesPigeonUtils.deepEquals(toList(), other.toList())  }
 
   override fun hashCode(): Int = toList().hashCode()
 }
@@ -683,10 +681,11 @@ data class NotificationMetadataMessage(
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
-data class BackgroundPlaybackMessage(
-    val enableBackground: Boolean,
-    val notificationMetadata: NotificationMetadataMessage? = null
-) {
+data class BackgroundPlaybackMessage (
+  val enableBackground: Boolean,
+  val notificationMetadata: NotificationMetadataMessage? = null
+)
+ {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): BackgroundPlaybackMessage {
       val enableBackground = pigeonVar_list[0] as Boolean
@@ -694,14 +693,12 @@ data class BackgroundPlaybackMessage(
       return BackgroundPlaybackMessage(enableBackground, notificationMetadata)
     }
   }
-
   fun toList(): List<Any?> {
     return listOf(
-        enableBackground,
-        notificationMetadata,
+      enableBackground,
+      notificationMetadata,
     )
   }
-
   override fun equals(other: Any?): Boolean {
     if (other !is BackgroundPlaybackMessage) {
       return false
@@ -709,12 +706,10 @@ data class BackgroundPlaybackMessage(
     if (this === other) {
       return true
     }
-    return MessagesPigeonUtils.deepEquals(toList(), other.toList())
-  }
+    return MessagesPigeonUtils.deepEquals(toList(), other.toList())  }
 
   override fun hashCode(): Int = toList().hashCode()
 }
-
 private open class MessagesPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -799,10 +794,14 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
         }
       }
       145.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { NotificationMetadataMessage.fromList(it) }
+        return (readValue(buffer) as? List<Any?>)?.let {
+          NotificationMetadataMessage.fromList(it)
+        }
       }
       146.toByte() -> {
-        return (readValue(buffer) as? List<Any?>)?.let { BackgroundPlaybackMessage.fromList(it) }
+        return (readValue(buffer) as? List<Any?>)?.let {
+          BackgroundPlaybackMessage.fromList(it)
+        }
       }
       else -> super.readValueOfType(type, buffer)
     }

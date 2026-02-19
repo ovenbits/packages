@@ -86,8 +86,8 @@ static id GetNullableObjectAtIndex(NSArray<id> *array, NSInteger key) {
 @implementation FVPCreationOptions
 + (instancetype)makeWithUri:(NSString *)uri
     httpHeaders:(NSDictionary<NSString *, NSString *> *)httpHeaders
-         backgroundPlayback:(nullable FVPBackgroundPlaybackMessage *)backgroundPlayback {
-  FVPCreationOptions *pigeonResult = [[FVPCreationOptions alloc] init];
+    backgroundPlayback:(nullable FVPBackgroundPlaybackMessage *)backgroundPlayback {
+  FVPCreationOptions* pigeonResult = [[FVPCreationOptions alloc] init];
   pigeonResult.uri = uri;
   pigeonResult.httpHeaders = httpHeaders;
   pigeonResult.backgroundPlayback = backgroundPlayback;
@@ -176,12 +176,12 @@ static id GetNullableObjectAtIndex(NSArray<id> *array, NSInteger key) {
 
 @implementation FVPNotificationMetadataMessage
 + (instancetype)makeWithId:(NSString *)id
-                     title:(nullable NSString *)title
-                     album:(nullable NSString *)album
-                    artist:(nullable NSString *)artist
-                durationMs:(nullable NSNumber *)durationMs
-                    artUri:(nullable NSString *)artUri {
-  FVPNotificationMetadataMessage *pigeonResult = [[FVPNotificationMetadataMessage alloc] init];
+    title:(nullable NSString *)title
+    album:(nullable NSString *)album
+    artist:(nullable NSString *)artist
+    durationMs:(nullable NSNumber *)durationMs
+    artUri:(nullable NSString *)artUri {
+  FVPNotificationMetadataMessage* pigeonResult = [[FVPNotificationMetadataMessage alloc] init];
   pigeonResult.id = id;
   pigeonResult.title = title;
   pigeonResult.album = album;
@@ -216,10 +216,9 @@ static id GetNullableObjectAtIndex(NSArray<id> *array, NSInteger key) {
 @end
 
 @implementation FVPBackgroundPlaybackMessage
-+ (instancetype)makeWithEnableBackground:(BOOL)enableBackground
-                    notificationMetadata:
-                        (nullable FVPNotificationMetadataMessage *)notificationMetadata {
-  FVPBackgroundPlaybackMessage *pigeonResult = [[FVPBackgroundPlaybackMessage alloc] init];
++ (instancetype)makeWithEnableBackground:(BOOL )enableBackground
+    notificationMetadata:(nullable FVPNotificationMetadataMessage *)notificationMetadata {
+  FVPBackgroundPlaybackMessage* pigeonResult = [[FVPBackgroundPlaybackMessage alloc] init];
   pigeonResult.enableBackground = enableBackground;
   pigeonResult.notificationMetadata = notificationMetadata;
   return pigeonResult;
@@ -254,9 +253,9 @@ static id GetNullableObjectAtIndex(NSArray<id> *array, NSInteger key) {
       return [FVPTexturePlayerIds fromList:[self readValue]];
     case 132: 
       return [FVPMediaSelectionAudioTrackData fromList:[self readValue]];
-    case 133:
+    case 133: 
       return [FVPNotificationMetadataMessage fromList:[self readValue]];
-    case 134:
+    case 134: 
       return [FVPBackgroundPlaybackMessage fromList:[self readValue]];
     default:
       return [super readValueOfType:type];
