@@ -116,6 +116,7 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
     final pigeonCreationOptions = CreationOptions(
       uri: uri,
       httpHeaders: dataSource.httpHeaders,
+      allowExternalPlayback: options.allowExternalPlayback,
       backgroundPlayback: backgroundPlayback,
     );
 

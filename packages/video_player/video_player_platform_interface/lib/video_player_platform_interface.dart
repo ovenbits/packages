@@ -591,6 +591,7 @@ class VideoPlayerOptions {
   VideoPlayerOptions({
     this.mixWithOthers = false,
     this.allowBackgroundPlayback = false,
+    this.allowExternalPlayback = true,
     this.notificationMetadata,
     this.webOptions,
   });
@@ -605,6 +606,18 @@ class VideoPlayerOptions {
   /// Note: This option will be silently ignored in the web platform (there is
   /// currently no way to implement this feature in this platform).
   final bool mixWithOthers;
+
+  /// Whether to allow video playback on external displays (e.g., AirPlay, wired
+  /// displays).
+  ///
+  /// The default value is true.
+  ///
+  /// Note: This option only affects iOS and macOS. On other platforms, this
+  /// setting will be silently ignored.
+  ///
+  /// See also:
+  /// * [AVPlayer.allowsExternalPlayback](https://developer.apple.com/documentation/avfoundation/avplayer/allowsexternalplayback)
+  final bool allowExternalPlayback;
 
   /// Metadata for the system media notification.
   ///
@@ -722,6 +735,7 @@ class VideoCreationOptions {
     required this.dataSource,
     required this.viewType,
     this.allowBackgroundPlayback = false,
+    this.allowExternalPlayback = true,
     this.notificationMetadata,
   });
 
@@ -735,6 +749,14 @@ class VideoCreationOptions {
   ///
   /// When true, video audio will continue playing when the app is backgrounded.
   final bool allowBackgroundPlayback;
+
+  /// Whether to allow video playback on external displays.
+  ///
+  /// When true, video can be played on external displays such as AirPlay
+  /// devices or wired displays. Defaults to true.
+  ///
+  /// Note: This option only affects iOS and macOS.
+  final bool allowExternalPlayback;
 
   /// Metadata for the system media notification.
   ///

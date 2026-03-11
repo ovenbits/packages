@@ -422,6 +422,75 @@ void main() {
       );
     });
 
+    test(
+      'createWithOptions passes allowExternalPlayback true by default',
+      () async {
+        final (
+          AVFoundationVideoPlayer player,
+          MockAVFoundationVideoPlayerApi api,
+          _,
+        ) = setUpMockPlayer(
+          playerId: 1,
+          textureId: 101,
+        );
+        const newPlayerId = 2;
+        when(api.createForTextureView(any)).thenAnswer(
+          (_) async => TexturePlayerIds(playerId: newPlayerId, textureId: 102),
+        );
+
+        await player.createWithOptions(
+          VideoCreationOptions(
+            dataSource: DataSource(
+              sourceType: DataSourceType.network,
+              uri: 'https://example.com',
+            ),
+            viewType: VideoViewType.textureView,
+          ),
+        );
+
+        final VerificationResult verification = verify(
+          api.createForTextureView(captureAny),
+        );
+        final creationOptions = verification.captured[0] as CreationOptions;
+        expect(creationOptions.allowExternalPlayback, true);
+      },
+    );
+
+    test(
+      'createWithOptions passes allowExternalPlayback false when set',
+      () async {
+        final (
+          AVFoundationVideoPlayer player,
+          MockAVFoundationVideoPlayerApi api,
+          _,
+        ) = setUpMockPlayer(
+          playerId: 1,
+          textureId: 101,
+        );
+        const newPlayerId = 2;
+        when(api.createForTextureView(any)).thenAnswer(
+          (_) async => TexturePlayerIds(playerId: newPlayerId, textureId: 102),
+        );
+
+        await player.createWithOptions(
+          VideoCreationOptions(
+            dataSource: DataSource(
+              sourceType: DataSourceType.network,
+              uri: 'https://example.com',
+            ),
+            viewType: VideoViewType.textureView,
+            allowExternalPlayback: false,
+          ),
+        );
+
+        final VerificationResult verification = verify(
+          api.createForTextureView(captureAny),
+        );
+        final creationOptions = verification.captured[0] as CreationOptions;
+        expect(creationOptions.allowExternalPlayback, false);
+      },
+    );
+
     test('setLooping', () async {
       final (
         AVFoundationVideoPlayer player,

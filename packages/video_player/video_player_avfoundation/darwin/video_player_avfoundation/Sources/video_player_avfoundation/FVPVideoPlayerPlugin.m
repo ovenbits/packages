@@ -138,9 +138,13 @@
 
 - (int64_t)configurePlayer:(FVPVideoPlayer *)player
     withExtraDisposeHandler:(nullable void (^)(void))extraDisposeHandler
-         backgroundPlayback:(nullable FVPBackgroundPlaybackMessage *)backgroundPlayback {
+         backgroundPlayback:(nullable FVPBackgroundPlaybackMessage *)backgroundPlayback
+      allowExternalPlayback:(BOOL)allowExternalPlayback {
   int64_t playerIdentifier = self.nextPlayerIdentifier++;
   self.playersByIdentifier[@(playerIdentifier)] = player;
+
+  // Configure external playback (AirPlay)
+  player.player.allowsExternalPlayback = allowExternalPlayback;
 
   // Configure background playback if requested
   if (backgroundPlayback != nil) {
@@ -233,7 +237,8 @@ static void upgradeAudioSessionCategory(NSObject<FVPAVAudioSession> *session,
 
     return @([self configurePlayer:player
            withExtraDisposeHandler:nil
-                backgroundPlayback:options.backgroundPlayback]);
+                backgroundPlayback:options.backgroundPlayback
+             allowExternalPlayback:options.allowExternalPlayback]);
   } @catch (NSException *exception) {
     *error = [FlutterError errorWithCode:@"video_player" message:exception.reason details:nil];
     return nil;
@@ -266,7 +271,8 @@ static void upgradeAudioSessionCategory(NSObject<FVPAVAudioSession> *session,
                              withExtraDisposeHandler:^() {
                                [weakSelf.textureRegistry unregisterTexture:textureIdentifier];
                              }
-                                  backgroundPlayback:options.backgroundPlayback];
+                                  backgroundPlayback:options.backgroundPlayback
+                               allowExternalPlayback:options.allowExternalPlayback];
     return [FVPTexturePlayerIds makeWithPlayerId:playerIdentifier textureId:textureIdentifier];
   } @catch (NSException *exception) {
     *error = [FlutterError errorWithCode:@"video_player" message:exception.reason details:nil];
