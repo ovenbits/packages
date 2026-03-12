@@ -956,39 +956,32 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
     return;
   }
 
-  // Check if it's a local file or network URL
-  if ([url.scheme isEqualToString:@"file"]) {
-    UIImage *image = [UIImage imageWithContentsOfFile:url.path];
-    if (image) {
-      MPMediaItemArtwork *artwork =
-          [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size
-                                          requestHandler:^UIImage *_Nonnull(CGSize size) {
-                                            return image;
-                                          }];
-      completion(artwork);
+  // Load artwork asynchronously in both cases so the MPNowPlayingInfoCenter
+  // update fires in a fresh runloop iteration. A synchronous completion on the
+  // calling thread would cause the update to be swallowed before CarPlay has a
+  // chance to process it (observed with file:// URIs on physical devices).
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    UIImage *image = nil;
+    if ([url.scheme isEqualToString:@"file"]) {
+      image = [UIImage imageWithContentsOfFile:url.path];
     } else {
-      completion(nil);
-    }
-  } else {
-    // Network URL - load asynchronously
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
       NSData *imageData = [NSData dataWithContentsOfURL:url];
-      UIImage *image = imageData ? [UIImage imageWithData:imageData] : nil;
+      image = imageData ? [UIImage imageWithData:imageData] : nil;
+    }
 
-      dispatch_async(dispatch_get_main_queue(), ^{
-        if (image) {
-          MPMediaItemArtwork *artwork =
-              [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size
-                                              requestHandler:^UIImage *_Nonnull(CGSize size) {
-                                                return image;
-                                              }];
-          completion(artwork);
-        } else {
-          completion(nil);
-        }
-      });
+    dispatch_async(dispatch_get_main_queue(), ^{
+      if (image) {
+        MPMediaItemArtwork *artwork =
+            [[MPMediaItemArtwork alloc] initWithBoundsSize:image.size
+                                            requestHandler:^UIImage *_Nonnull(CGSize size) {
+                                              return image;
+                                            }];
+        completion(artwork);
+      } else {
+        completion(nil);
+      }
     });
-  }
+  });
 }
 #endif
 
