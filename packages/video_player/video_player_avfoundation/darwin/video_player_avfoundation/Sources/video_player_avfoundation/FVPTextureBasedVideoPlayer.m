@@ -54,9 +54,17 @@
     // invisible AVPlayerLayer is used to overwrite the protection of pixel buffers in those streams
     // for issue #1, and restore the correct width and height for issue #2.
     _playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
-    // A non-zero frame is required for AVPictureInPictureController to consider PiP possible.
-    // The actual PiP window size is determined by the video dimensions, not the layer frame.
-    _playerLayer.frame = CGRectMake(0, 0, 1, 1);
+    // AVFoundation uses the AVPlayerLayer bounds to choose HLS renditions:
+    // a 1x1 layer causes it to select the lowest-resolution variant.
+    // Use the screen size so the ABR algorithm picks the correct quality,
+    // but keep the layer invisible since rendering goes through the texture pipeline.
+#if TARGET_OS_IOS
+    CGRect layerFrame = [UIScreen mainScreen].bounds;
+#else
+    CGRect layerFrame = NSScreen.mainScreen.frame;
+#endif
+    _playerLayer.frame = layerFrame;
+    _playerLayer.opacity = 0;
 #if TARGET_OS_IOS
     CALayer *flutterLayer = viewProvider.viewController.view.layer;
 #else

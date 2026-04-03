@@ -16,6 +16,8 @@
 static void *timeRangeContext = &timeRangeContext;
 static void *statusContext = &statusContext;
 static void *playbackLikelyToKeepUpContext = &playbackLikelyToKeepUpContext;
+static void *playbackBufferEmptyContext = &playbackBufferEmptyContext;
+static void *playbackBufferFullContext = &playbackBufferFullContext;
 static void *rateContext = &rateContext;
 
 /// Registers KVO observers on 'object' for each entry in 'observations', which must be a
@@ -67,6 +69,8 @@ static NSDictionary<NSString *, NSValue *> *FVPGetPlayerItemObservations(void) {
     @"loadedTimeRanges" : [NSValue valueWithPointer:timeRangeContext],
     @"status" : [NSValue valueWithPointer:statusContext],
     @"playbackLikelyToKeepUp" : [NSValue valueWithPointer:playbackLikelyToKeepUpContext],
+    @"playbackBufferEmpty" : [NSValue valueWithPointer:playbackBufferEmptyContext],
+    @"playbackBufferFull" : [NSValue valueWithPointer:playbackBufferFullContext],
   };
 }
 
@@ -151,6 +155,9 @@ static NSDictionary<NSString *, NSValue *> *FVPGetPlayerItemObservations(void) {
 
   _player = [avFactory playerWithPlayerItem:item];
   _player.actionAtItemEnd = AVPlayerActionAtItemEndNone;
+  if (@available(iOS 10.0, macOS 10.12, *)) {
+    _player.automaticallyWaitsToMinimizeStalling = NO;
+  }
 
   // Configure output.
   NSDictionary *pixBuffAttributes = @{
@@ -319,12 +326,52 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
     } else {
       [self.eventListener videoPlayerDidStartBuffering];
     }
+  } else if (context == playbackBufferEmptyContext) {
+    [self.eventListener videoPlayerDidStartBuffering];
+    [self scheduleStallRecovery];
+  } else if (context == playbackBufferFullContext) {
+    if (_isPlaying && _isInitialized) {
+      if (@available(iOS 10.0, macOS 10.12, *)) {
+        [_player playImmediatelyAtRate:1.0];
+      } else {
+        [_player play];
+      }
+    }
   } else if (context == rateContext) {
     // Important: Make sure to cast the object to AVPlayer when observing the rate property,
     // as it is not available in AVPlayerItem.
     AVPlayer *player = (AVPlayer *)object;
     [self.eventListener videoPlayerDidSetPlaying:(player.rate > 0)];
   }
+}
+
+/// Schedules a stall-recovery attempt. If the buffer is still empty after a short delay and
+/// playback should be active, seeks to the current position to force AVFoundation to re-buffer,
+/// which often allows it to select a higher-quality HLS rendition on the retry.
+- (void)scheduleStallRecovery {
+  __weak typeof(self) weakSelf = self;
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)),
+                 dispatch_get_main_queue(), ^{
+    typeof(self) strongSelf = weakSelf;
+    if (!strongSelf || strongSelf->_disposed || !strongSelf->_isPlaying ||
+        !strongSelf->_isInitialized) {
+      return;
+    }
+    AVPlayerItem *item = [strongSelf->_player currentItem];
+    if (item.playbackBufferEmpty && !item.playbackLikelyToKeepUp) {
+      CMTime currentTime = strongSelf->_player.currentTime;
+      [strongSelf->_player seekToTime:currentTime
+                    completionHandler:^(BOOL finished) {
+                      if (finished && !strongSelf->_disposed && strongSelf->_isPlaying) {
+                        if (@available(iOS 10.0, macOS 10.12, *)) {
+                          [strongSelf->_player playImmediatelyAtRate:1.0];
+                        } else {
+                          [strongSelf->_player play];
+                        }
+                      }
+                    }];
+    }
+  });
 }
 
 - (void)reportStatusForPlayerItem:(AVPlayerItem *)item {
@@ -358,7 +405,15 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
     if (_targetPlaybackSpeed) {
       [self updateRate];
     } else {
-      [_player play];
+      // Use playImmediatelyAtRate: to bypass AVFoundation's conservative
+      // AVPlayerAutomaticWaitingBehaviorMinimizeStalls, which makes HLS start at a low
+      // rendition. Starting immediately allows AVFoundation to pick the highest
+      // quality the network can sustain right now.
+      if (@available(iOS 10.0, macOS 10.12, *)) {
+        [_player playImmediatelyAtRate:1.0];
+      } else {
+        [_player play];
+      }
     }
   } else {
     [_player pause];
