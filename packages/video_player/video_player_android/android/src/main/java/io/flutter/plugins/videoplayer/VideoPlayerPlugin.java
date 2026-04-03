@@ -141,6 +141,29 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
 
   private @NonNull VideoAsset videoAssetWithOptions(@NonNull CreationOptions options) {
     final @NonNull String uri = options.getUri();
+
+    // HLS manifest override: write the synthetic master playlist to a temp file
+    // and use its file:// URI. ExoPlayer handles file:// HLS playlists with
+    // separate audio renditions correctly.
+    String hlsOverride = options.getHlsManifestOverride();
+    if (hlsOverride != null && !hlsOverride.isEmpty()) {
+      try {
+        String fileName = "mx_hls_hq_" + Integer.toHexString(uri.hashCode()) + ".m3u8";
+        java.io.File tempFile = new java.io.File(
+            flutterState.applicationContext.getCacheDir(), fileName);
+        java.io.FileOutputStream fos = new java.io.FileOutputStream(tempFile);
+        fos.write(hlsOverride.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        fos.close();
+        String fileUri = android.net.Uri.fromFile(tempFile).toString();
+        Log.d(TAG, "HLS manifest override written to: " + fileUri);
+        return VideoAsset.fromRemoteUrl(
+            fileUri, VideoAsset.StreamingFormat.HTTP_LIVE,
+            options.getHttpHeaders(), options.getUserAgent());
+      } catch (Exception e) {
+        Log.w(TAG, "Failed to write HLS manifest override, using original URI", e);
+      }
+    }
+
     if (uri.startsWith("asset:")) {
       return VideoAsset.fromAssetUrl(uri);
     } else if (uri.startsWith("rtsp:")) {

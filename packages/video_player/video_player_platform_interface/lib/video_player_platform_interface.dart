@@ -357,13 +357,13 @@ class VideoEvent {
 
   @override
   int get hashCode => Object.hash(
-    eventType,
-    duration,
-    size,
-    rotationCorrection,
-    buffered,
-    isPlaying,
-  );
+        eventType,
+        duration,
+        size,
+        rotationCorrection,
+        buffered,
+        isPlaying,
+      );
 }
 
 /// Type of the event.
@@ -594,6 +594,7 @@ class VideoPlayerOptions {
     this.allowExternalPlayback = true,
     this.notificationMetadata,
     this.webOptions,
+    this.hlsManifestOverride,
   });
 
   /// Set this to true to keep playing video in background, when app goes in background.
@@ -632,6 +633,13 @@ class VideoPlayerOptions {
 
   /// Additional web controls
   final VideoPlayerWebOptions? webOptions;
+
+  /// An optional UTF-8 HLS master playlist body that the native player should
+  /// load instead of fetching the manifest from the data source URI.
+  ///
+  /// Used for forcing highest-quality HLS startup on demuxed-audio streams.
+  /// Ignored when null or on platforms that don't support it (e.g., web).
+  final String? hlsManifestOverride;
 }
 
 /// [VideoPlayerWebOptions] can be optionally used to set additional web settings
@@ -671,11 +679,11 @@ class VideoPlayerWebOptionsControls {
 
   /// Disables control options. Default behavior.
   const VideoPlayerWebOptionsControls.disabled()
-    : enabled = false,
-      allowDownload = false,
-      allowFullscreen = false,
-      allowPlaybackRate = false,
-      allowPictureInPicture = false;
+      : enabled = false,
+        allowDownload = false,
+        allowFullscreen = false,
+        allowPlaybackRate = false,
+        allowPictureInPicture = false;
 
   /// Whether native controls are enabled
   final bool enabled;
@@ -737,6 +745,7 @@ class VideoCreationOptions {
     this.allowBackgroundPlayback = false,
     this.allowExternalPlayback = true,
     this.notificationMetadata,
+    this.hlsManifestOverride,
   });
 
   /// The data source used to create the player.
@@ -763,6 +772,18 @@ class VideoCreationOptions {
   /// When provided along with [allowBackgroundPlayback], a system notification
   /// will be shown with media controls and the provided metadata.
   final NotificationMetadata? notificationMetadata;
+
+  /// An optional UTF-8 HLS master playlist body that the native player should
+  /// load instead of fetching the manifest from [dataSource]'s URI.
+  ///
+  /// Used for forcing highest-quality HLS startup on demuxed-audio streams:
+  /// the override contains a single `#EXT-X-STREAM-INF` (highest bandwidth)
+  /// plus all `#EXT-X-MEDIA` entries with absolute URIs. The native player
+  /// loads this body as the manifest while fetching segments normally over
+  /// HTTP.
+  ///
+  /// Ignored when null or on platforms that don't support it.
+  final String? hlsManifestOverride;
 }
 
 /// Represents an audio track in a video with its metadata.
@@ -833,19 +854,18 @@ class VideoAudioTrack {
 
   @override
   int get hashCode => Object.hash(
-    id,
-    label,
-    language,
-    isSelected,
-    bitrate,
-    sampleRate,
-    channelCount,
-    codec,
-  );
+        id,
+        label,
+        language,
+        isSelected,
+        bitrate,
+        sampleRate,
+        channelCount,
+        codec,
+      );
 
   @override
-  String toString() =>
-      'VideoAudioTrack('
+  String toString() => 'VideoAudioTrack('
       'id: $id, '
       'label: $label, '
       'language: $language, '

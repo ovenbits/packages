@@ -32,11 +32,11 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
     @visibleForTesting
     VideoPlayerInstanceApi Function(int playerId)? playerApiProvider,
     Stream<PlatformVideoEvent> Function(String streamIdentifier)?
-    videoEventStreamProvider,
-  }) : _api = pluginApi ?? AndroidVideoPlayerApi(),
-       _playerApiProvider = playerApiProvider ?? _productionApiProvider,
-       _videoEventStreamProvider =
-           videoEventStreamProvider ?? _productionVideoEventStreamProvider;
+        videoEventStreamProvider,
+  })  : _api = pluginApi ?? AndroidVideoPlayerApi(),
+        _playerApiProvider = playerApiProvider ?? _productionApiProvider,
+        _videoEventStreamProvider =
+            videoEventStreamProvider ?? _productionVideoEventStreamProvider;
 
   final AndroidVideoPlayerApi _api;
   // A method to create VideoPlayerInstanceApi instances, which can be
@@ -45,7 +45,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
   // A method to create video event stream instances, which can be
   // overridden for testing.
   final Stream<PlatformVideoEvent> Function(String streamIdentifier)
-  _videoEventStreamProvider;
+      _videoEventStreamProvider;
 
   final Map<int, _PlayerInstance> _players = <int, _PlayerInstance>{};
 
@@ -136,6 +136,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
       userAgent: userAgent,
       formatHint: formatHint,
       backgroundPlayback: backgroundPlayback,
+      hlsManifestOverride: options.hlsManifestOverride,
     );
 
     final int playerId;
@@ -236,8 +237,8 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
 
     return switch (viewState) {
       VideoPlayerTextureViewState(:final int textureId) => Texture(
-        textureId: textureId,
-      ),
+          textureId: textureId,
+        ),
       VideoPlayerPlatformViewState() => PlatformViewPlayer(playerId: playerId),
     };
   }

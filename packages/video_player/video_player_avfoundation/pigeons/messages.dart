@@ -18,6 +18,7 @@ import 'package:pigeon/pigeon.dart';
     copyrightHeader: 'pigeons/copyright.txt',
   ),
 )
+
 /// Information passed to the platform view creation.
 class PlatformVideoViewCreationParams {
   const PlatformVideoViewCreationParams({required this.playerId});
@@ -40,6 +41,11 @@ class CreationOptions {
 
   /// Background playback configuration (optional).
   BackgroundPlaybackMessage? backgroundPlayback;
+
+  /// Optional UTF-8 HLS master playlist body. When non-null, the player uses
+  /// this as the manifest instead of fetching from [uri]. All segment/rendition
+  /// URIs inside must be absolute.
+  String? hlsManifestOverride;
 }
 
 class TexturePlayerIds {

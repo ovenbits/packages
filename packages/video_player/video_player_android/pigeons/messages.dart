@@ -13,6 +13,7 @@ import 'package:pigeon/pigeon.dart';
     copyrightHeader: 'pigeons/copyright.txt',
   ),
 )
+
 /// Pigeon equivalent of video_platform_interface's VideoFormat.
 enum PlatformVideoFormat { dash, hls, ss }
 
@@ -99,6 +100,11 @@ class CreationOptions {
 
   /// Background playback configuration (optional).
   BackgroundPlaybackMessage? backgroundPlayback;
+
+  /// Optional UTF-8 HLS master playlist body. When non-null, the player uses
+  /// this as the manifest instead of fetching from [uri]. All segment/rendition
+  /// URIs inside must be absolute.
+  String? hlsManifestOverride;
 }
 
 class TexturePlayerIds {

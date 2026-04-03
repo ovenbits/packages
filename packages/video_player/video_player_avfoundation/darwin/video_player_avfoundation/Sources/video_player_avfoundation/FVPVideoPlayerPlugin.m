@@ -8,6 +8,8 @@
 @import AVFoundation;
 @import AVKit;
 
+#import <objc/runtime.h>
+
 #import "./include/video_player_avfoundation/FVPAVFactory.h"
 #import "./include/video_player_avfoundation/FVPAssetProvider.h"
 #import "./include/video_player_avfoundation/FVPDisplayLink.h"
@@ -19,6 +21,137 @@
 // Relative path is needed for messages.g.h. See
 // https://github.com/flutter/packages/pull/6675/#discussion_r1591210702
 #import "./include/video_player_avfoundation/messages.g.h"
+
+#pragma mark - HLS manifest override support
+
+/// AVAssetResourceLoaderDelegate that serves a UTF-8 HLS playlist body for the
+/// initial manifest request. All segment/sub-playlist URLs inside the body must
+/// be absolute HTTP so the player fetches them over the network normally.
+@interface FVPHlsManifestOverrideDelegate : NSObject <AVAssetResourceLoaderDelegate>
+@property(nonatomic, copy) NSString *playlistBody;
+- (instancetype)initWithPlaylistBody:(NSString *)body;
+@end
+
+@implementation FVPHlsManifestOverrideDelegate
+- (instancetype)initWithPlaylistBody:(NSString *)body {
+  self = [super init];
+  if (self) {
+    _playlistBody = [body copy];
+  }
+  return self;
+}
+
+- (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader
+    shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest {
+  (void)resourceLoader;
+  NSData *data = [self.playlistBody dataUsingEncoding:NSUTF8StringEncoding];
+  if (!data) {
+    [loadingRequest finishLoadingWithError:[NSError errorWithDomain:@"FVPHlsManifestOverride"
+                                                              code:1
+                                                          userInfo:nil]];
+    return YES;
+  }
+
+  AVAssetResourceLoadingContentInformationRequest *info = loadingRequest.contentInformationRequest;
+  if (info != nil) {
+    info.contentType = @"public.m3u-playlist";
+    info.contentLength = (long long)data.length;
+    info.byteRangeAccessSupported = NO;
+  }
+
+  AVAssetResourceLoadingDataRequest *dataRequest = loadingRequest.dataRequest;
+  if (dataRequest != nil) {
+    long long offset = dataRequest.currentOffset;
+    if (offset < 0 || (NSUInteger)offset >= data.length) {
+      [loadingRequest finishLoading];
+      return YES;
+    }
+    NSUInteger start = (NSUInteger)offset;
+    NSUInteger available = data.length - start;
+    long long reqLen = dataRequest.requestedLength;
+    NSUInteger length = (reqLen <= 0) ? available : (NSUInteger)MIN((unsigned long long)reqLen,
+                                                                    (unsigned long long)available);
+    [dataRequest respondWithData:[data subdataWithRange:NSMakeRange(start, length)]];
+  }
+
+  [loadingRequest finishLoading];
+  return YES;
+}
+@end
+
+/// Minimal FVPAVAsset wrapper for a raw AVAsset (used by the HLS override path
+/// where the AVURLAsset has a custom resource loader and cannot go through the
+/// factory's URLAssetWithURL:options:).
+@interface FVPHlsOverrideAsset : NSObject <FVPAVAsset>
+@property(nonatomic, readwrite) AVAsset *asset;
+@end
+
+@implementation FVPHlsOverrideAsset
+- (instancetype)initWithAsset:(AVAsset *)asset {
+  self = [super init];
+  if (self) {
+    _asset = asset;
+  }
+  return self;
+}
+
+- (CMTime)duration {
+  return self.asset.duration;
+}
+
+- (AVKeyValueStatus)statusOfValueForKey:(NSString *)key
+                                  error:(NSError *_Nullable *_Nullable)outError {
+  return [self.asset statusOfValueForKey:key error:outError];
+}
+
+- (void)loadValuesAsynchronouslyForKeys:(NSArray<NSString *> *)keys
+                      completionHandler:(nullable void (^NS_SWIFT_SENDABLE)(void))handler {
+  [self.asset loadValuesAsynchronouslyForKeys:keys completionHandler:handler];
+}
+
+- (NSArray<AVAssetTrack *> *)tracksWithMediaType:(AVMediaType)mediaType {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  return [self.asset tracksWithMediaType:mediaType];
+#pragma clang diagnostic pop
+}
+
+- (void)loadTracksWithMediaType:(AVMediaType)mediaType
+              completionHandler:(void (^NS_SWIFT_SENDABLE)(NSArray<AVAssetTrack *> *_Nullable,
+                                                           NSError *_Nullable))completionHandler
+    API_AVAILABLE(macos(12.0), ios(15.0)) {
+  [self.asset loadTracksWithMediaType:mediaType completionHandler:completionHandler];
+}
+@end
+
+/// Minimal FVPAVPlayerItem wrapper for a raw AVPlayerItem.
+@interface FVPHlsOverridePlayerItem : NSObject <FVPAVPlayerItem>
+@property(nonatomic, readwrite) AVPlayerItem *playerItem;
+@end
+
+@implementation FVPHlsOverridePlayerItem
+- (instancetype)initWithPlayerItem:(AVPlayerItem *)playerItem {
+  self = [super init];
+  if (self) {
+    _playerItem = playerItem;
+  }
+  return self;
+}
+
+- (NSObject<FVPAVAsset> *)asset {
+  return [[FVPHlsOverrideAsset alloc] initWithAsset:self.playerItem.asset];
+}
+
+- (AVVideoComposition *)videoComposition {
+  return self.playerItem.videoComposition;
+}
+
+- (void)setVideoComposition:(AVVideoComposition *)videoComposition {
+  self.playerItem.videoComposition = videoComposition;
+}
+@end
+
+#pragma mark -
 
 /// Non-test implementation of the diplay link factory.
 @interface FVPDefaultDisplayLinkFactory : NSObject <FVPDisplayLinkFactory>
@@ -326,12 +459,47 @@ static void upgradeAudioSessionCategory(NSObject<FVPAVAudioSession> *session,
 /// Returns the AVPlayerItem corresponding to the given player creation options.
 - (nonnull NSObject<FVPAVPlayerItem> *)playerItemWithCreationOptions:
     (nonnull FVPCreationOptions *)options {
+  NSString *hlsOverride = options.hlsManifestOverride;
+  if (hlsOverride != nil && hlsOverride.length > 0) {
+    return [self playerItemWithHlsManifestOverride:hlsOverride originalUri:options.uri];
+  }
+
   NSDictionary<NSString *, NSString *> *headers = options.httpHeaders;
   NSDictionary<NSString *, id> *itemOptions =
       headers.count == 0 ? nil : @{@"AVURLAssetHTTPHeaderFieldsKey" : headers};
   NSObject<FVPAVAsset> *asset = [self.avFactory URLAssetWithURL:[NSURL URLWithString:options.uri]
                                                         options:itemOptions];
   return [self.avFactory playerItemWithAsset:asset];
+}
+
+/// Creates an AVPlayerItem that loads [hlsManifestOverride] as the HLS master
+/// playlist via AVAssetResourceLoaderDelegate while fetching all segments and
+/// sub-playlists from the network normally (they use absolute HTTP URLs inside
+/// the override body).
+- (nonnull NSObject<FVPAVPlayerItem> *)playerItemWithHlsManifestOverride:
+                                           (nonnull NSString *)hlsOverride
+                                                             originalUri:
+                                                                 (nonnull NSString *)originalUri {
+  // Use a custom URL scheme so AVAssetResourceLoader intercepts the initial
+  // manifest request. Subsequent segment requests use absolute HTTP URLs from
+  // the synthetic playlist body, so they bypass the resource loader entirely.
+  NSString *customUri =
+      [NSString stringWithFormat:@"x-mx-hls://%@", [[NSUUID UUID] UUIDString]];
+  NSURL *customURL = [NSURL URLWithString:customUri];
+  AVURLAsset *rawAsset = [AVURLAsset URLAssetWithURL:customURL options:nil];
+
+  FVPHlsManifestOverrideDelegate *delegate =
+      [[FVPHlsManifestOverrideDelegate alloc] initWithPlaylistBody:hlsOverride];
+  // The delegate must be retained for the lifetime of the asset. Associated
+  // objects prevent premature deallocation.
+  static char kDelegateAssocKey;
+  objc_setAssociatedObject(rawAsset, &kDelegateAssocKey, delegate,
+                           OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  [rawAsset.resourceLoader setDelegate:delegate
+                                 queue:dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)];
+
+  AVPlayerItem *item = [AVPlayerItem playerItemWithAsset:rawAsset];
+  return [[FVPHlsOverridePlayerItem alloc] initWithPlayerItem:item];
 }
 
 @end
