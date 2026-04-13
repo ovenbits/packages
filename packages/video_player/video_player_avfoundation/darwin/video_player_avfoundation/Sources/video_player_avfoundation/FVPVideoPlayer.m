@@ -350,28 +350,28 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 /// which often allows it to select a higher-quality HLS rendition on the retry.
 - (void)scheduleStallRecovery {
   __weak typeof(self) weakSelf = self;
-  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)),
-                 dispatch_get_main_queue(), ^{
-    typeof(self) strongSelf = weakSelf;
-    if (!strongSelf || strongSelf->_disposed || !strongSelf->_isPlaying ||
-        !strongSelf->_isInitialized) {
-      return;
-    }
-    AVPlayerItem *item = [strongSelf->_player currentItem];
-    if (item.playbackBufferEmpty && !item.playbackLikelyToKeepUp) {
-      CMTime currentTime = strongSelf->_player.currentTime;
-      [strongSelf->_player seekToTime:currentTime
-                    completionHandler:^(BOOL finished) {
-                      if (finished && !strongSelf->_disposed && strongSelf->_isPlaying) {
-                        if (@available(iOS 10.0, macOS 10.12, *)) {
-                          [strongSelf->_player playImmediatelyAtRate:1.0];
-                        } else {
-                          [strongSelf->_player play];
-                        }
-                      }
-                    }];
-    }
-  });
+  dispatch_after(
+      dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        typeof(self) strongSelf = weakSelf;
+        if (!strongSelf || strongSelf->_disposed || !strongSelf->_isPlaying ||
+            !strongSelf->_isInitialized) {
+          return;
+        }
+        AVPlayerItem *item = [strongSelf->_player currentItem];
+        if (item.playbackBufferEmpty && !item.playbackLikelyToKeepUp) {
+          CMTime currentTime = strongSelf->_player.currentTime;
+          [strongSelf->_player seekToTime:currentTime
+                        completionHandler:^(BOOL finished) {
+                          if (finished && !strongSelf->_disposed && strongSelf->_isPlaying) {
+                            if (@available(iOS 10.0, macOS 10.12, *)) {
+                              [strongSelf->_player playImmediatelyAtRate:1.0];
+                            } else {
+                              [strongSelf->_player play];
+                            }
+                          }
+                        }];
+        }
+      });
 }
 
 - (void)reportStatusForPlayerItem:(AVPlayerItem *)item {
@@ -638,11 +638,14 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setAutoPictureInPicture:(BOOL)enabled error:(FlutterError *_Nullable *_Nonnull)error {
-  if (@available(iOS 14.2, macOS 12.0, *)) {
+// canStartPictureInPictureAutomaticallyFromInline is iOS/visionOS only; unavailable on macOS.
+#if TARGET_OS_IOS
+  if (@available(iOS 14.2, *)) {
     if (_pipController) {
       _pipController.canStartPictureInPictureAutomaticallyFromInline = enabled;
     }
   }
+#endif
 }
 
 #pragma mark - AVPictureInPictureControllerDelegate

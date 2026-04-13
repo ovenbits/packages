@@ -1,3 +1,7 @@
+## 2.10.2
+
+- Fixes macOS build error caused by `canStartPictureInPictureAutomaticallyFromInline` being unavailable on macOS.
+
 ## 2.10.1
 
 - Fixes CarPlay Now Playing play/pause button not updating when playback is controlled from the Flutter app.
