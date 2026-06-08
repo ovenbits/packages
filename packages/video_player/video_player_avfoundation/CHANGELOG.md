@@ -1,3 +1,9 @@
+## 2.10.4
+
+- Fixes unwanted automatic Picture-in-Picture on iOS for texture players when
+  `allowAutoPictureInPicture` is false by not creating an
+  `AVPictureInPictureController` until automatic or manual PiP is requested.
+
 ## 2.10.3
 
 - Adds creation-time `allowAutoPictureInPicture` support via `VideoCreationOptions`.

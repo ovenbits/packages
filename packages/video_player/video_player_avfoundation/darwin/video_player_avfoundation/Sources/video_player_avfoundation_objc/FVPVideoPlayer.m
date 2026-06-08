@@ -487,15 +487,40 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   _isInitialized = YES;
   [self.eventListener videoPlayerDidInitializeWithDuration:self.duration
                                                       size:currentItem.presentationSize];
-  // Set up PiP controller eagerly so that isPictureInPicturePossible has time to become YES
-  // before the user requests PiP.
-  [self setupPictureInPicture];
+  // Only create a PiP controller when automatic PiP is enabled. Texture players attach a
+  // full-screen AVPlayerLayer to the view hierarchy; keeping an AVPictureInPictureController
+  // around with that layer can still trigger background PiP on iOS even when
+  // canStartPictureInPictureAutomaticallyFromInline is NO. Manual PiP lazily creates the
+  // controller in startPictureInPicture.
+  if (_allowAutoPictureInPicture) {
+    [self setupPictureInPicture];
+  }
+}
+
+- (void)setAllowAutoPictureInPicture:(BOOL)allowAutoPictureInPicture {
+  if (_allowAutoPictureInPicture == allowAutoPictureInPicture) {
+    return;
+  }
+  _allowAutoPictureInPicture = allowAutoPictureInPicture;
+  if (!_isInitialized) {
+    return;
+  }
+  if (allowAutoPictureInPicture) {
+    [self setupPictureInPicture];
+  } else {
+    [self applyAutoPictureInPictureToControllerIfNeeded];
+    [self teardownPictureInPictureControllerIfInactive];
+  }
 }
 
 /// Creates the AVPictureInPictureController using the player layer provided by the subclass
 /// (or the base class default). Must be called after the player item is ready to play.
 - (void)setupPictureInPicture {
   if (![AVPictureInPictureController isPictureInPictureSupported]) {
+    return;
+  }
+  if (_pipController) {
+    [self applyAutoPictureInPictureToControllerIfNeeded];
     return;
   }
   AVPlayerLayer *playerLayer = [self playerLayerForPictureInPicture];
@@ -505,6 +530,13 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   _pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:playerLayer];
   _pipController.delegate = self;
   [self applyAutoPictureInPictureToControllerIfNeeded];
+}
+
+- (void)teardownPictureInPictureControllerIfInactive {
+  if (_pipController && !_pipController.isPictureInPictureActive) {
+    _pipController.delegate = nil;
+    _pipController = nil;
+  }
 }
 
 - (void)applyAutoPictureInPictureToControllerIfNeeded {
@@ -645,6 +677,9 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)startPictureInPicture:(FlutterError *_Nullable *_Nonnull)error {
+  if (!_pipController) {
+    [self setupPictureInPicture];
+  }
   if (_pipController && _pipController.isPictureInPicturePossible &&
       !_pipController.isPictureInPictureActive) {
     [_pipController startPictureInPicture];
@@ -658,8 +693,7 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setAutoPictureInPicture:(BOOL)enabled error:(FlutterError *_Nullable *_Nonnull)error {
-  _allowAutoPictureInPicture = enabled;
-  [self applyAutoPictureInPictureToControllerIfNeeded];
+  self.allowAutoPictureInPicture = enabled;
 }
 
 #pragma mark - AVPictureInPictureControllerDelegate
