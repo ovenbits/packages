@@ -1,3 +1,9 @@
+## 2.10.1
+
+- Adds creation-time `allowAutoPictureInPicture` support via `VideoCreationOptions`.
+- Fixes `setAutoPictureInPicture(false)` being ignored after `setPictureInPictureActions`.
+- Re-applies auto PiP settings when the Activity is attached.
+
 ## 2.10.0
 
 - Adds background playback with system media notification support.

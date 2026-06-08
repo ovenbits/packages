@@ -171,7 +171,8 @@ public final class VideoPlayerPlugin: NSObject, FlutterPlugin, AVFoundationVideo
       player,
       extraDisposeHandler: nil,
       backgroundPlayback: params.backgroundPlayback,
-      allowExternalPlayback: params.allowExternalPlayback
+      allowExternalPlayback: params.allowExternalPlayback,
+      allowAutoPictureInPicture: params.allowAutoPictureInPicture
     )
   }
 
@@ -199,7 +200,8 @@ public final class VideoPlayerPlugin: NSObject, FlutterPlugin, AVFoundationVideo
         self?.textureRegistry.unregisterTexture(textureId)
       },
       backgroundPlayback: creationOptions.backgroundPlayback,
-      allowExternalPlayback: creationOptions.allowExternalPlayback
+      allowExternalPlayback: creationOptions.allowExternalPlayback,
+      allowAutoPictureInPicture: creationOptions.allowAutoPictureInPicture
     )
 
     return TexturePlayerIds(playerId: playerId, textureId: textureId)
@@ -260,7 +262,8 @@ public final class VideoPlayerPlugin: NSObject, FlutterPlugin, AVFoundationVideo
     _ player: FVPVideoPlayer,
     extraDisposeHandler: (() -> Void)?,
     backgroundPlayback: BackgroundPlaybackMessage?,
-    allowExternalPlayback: Bool
+    allowExternalPlayback: Bool,
+    allowAutoPictureInPicture: Bool
   ) -> Int64 {
     let playerId = nextPlayerIdentifier
     nextPlayerIdentifier += 1
@@ -268,6 +271,7 @@ public final class VideoPlayerPlugin: NSObject, FlutterPlugin, AVFoundationVideo
 
     // Configure external playback (AirPlay)
     player.player.allowsExternalPlayback = allowExternalPlayback
+    player.allowAutoPictureInPicture = allowAutoPictureInPicture
 
     // Configure background playback if requested
     if let backgroundPlayback = backgroundPlayback {

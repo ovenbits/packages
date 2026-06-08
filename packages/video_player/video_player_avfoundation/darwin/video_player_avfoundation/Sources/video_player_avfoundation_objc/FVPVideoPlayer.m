@@ -95,6 +95,7 @@ static NSDictionary<NSString *, NSValue *> *FVPGetPlayerItemObservations(void) {
   self = [super init];
   NSAssert(self, @"super init cannot be nil");
 
+  _allowAutoPictureInPicture = NO;
   _viewProvider = viewProvider;
 
   NSObject<FVPAVAsset> *asset = item.asset;
@@ -503,6 +504,17 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   }
   _pipController = [[AVPictureInPictureController alloc] initWithPlayerLayer:playerLayer];
   _pipController.delegate = self;
+  [self applyAutoPictureInPictureToControllerIfNeeded];
+}
+
+- (void)applyAutoPictureInPictureToControllerIfNeeded {
+#if TARGET_OS_IOS
+  if (@available(iOS 14.2, *)) {
+    if (_pipController) {
+      _pipController.canStartPictureInPictureAutomaticallyFromInline = _allowAutoPictureInPicture;
+    }
+  }
+#endif
 }
 
 /// Returns the AVPlayerLayer to use for PiP. The base class creates a minimal standalone layer
@@ -646,14 +658,8 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 }
 
 - (void)setAutoPictureInPicture:(BOOL)enabled error:(FlutterError *_Nullable *_Nonnull)error {
-// canStartPictureInPictureAutomaticallyFromInline is iOS/visionOS only; unavailable on macOS.
-#if TARGET_OS_IOS
-  if (@available(iOS 14.2, *)) {
-    if (_pipController) {
-      _pipController.canStartPictureInPictureAutomaticallyFromInline = enabled;
-    }
-  }
-#endif
+  _allowAutoPictureInPicture = enabled;
+  [self applyAutoPictureInPictureToControllerIfNeeded];
 }
 
 #pragma mark - AVPictureInPictureControllerDelegate

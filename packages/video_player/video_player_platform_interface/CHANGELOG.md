@@ -1,3 +1,9 @@
+## 6.8.1
+
+- Adds `allowAutoPictureInPicture` to `VideoPlayerOptions` and `VideoCreationOptions`.
+  This is applied when the player is created; `setAutoPictureInPicture` can still
+  override the value at runtime.
+
 ## 6.8.0
 
 - Adds background playback with system media notification support.

@@ -607,6 +607,7 @@ class VideoPlayerOptions {
     this.mixWithOthers = false,
     this.allowBackgroundPlayback = false,
     this.allowExternalPlayback = true,
+    this.allowAutoPictureInPicture = false,
     this.notificationMetadata,
     this.webOptions,
   });
@@ -633,6 +634,20 @@ class VideoPlayerOptions {
   /// See also:
   /// * [AVPlayer.allowsExternalPlayback](https://developer.apple.com/documentation/avfoundation/avplayer/allowsexternalplayback)
   final bool allowExternalPlayback;
+
+  /// Whether the player should automatically enter Picture-in-Picture when the
+  /// app goes to the background while video is playing inline.
+  ///
+  /// The default value is false.
+  ///
+  /// This can also be changed after creation via
+  /// [VideoPlayerPlatform.setAutoPictureInPicture]. A later call to
+  /// `setAutoPictureInPicture` overrides this initial value.
+  ///
+  /// Note: On Android, this requires API 31 (Android 12) or higher. On macOS
+  /// and web, automatic PiP behavior may differ. Manual PiP via
+  /// `startPictureInPicture` is not affected by this setting.
+  final bool allowAutoPictureInPicture;
 
   /// Metadata for the system media notification.
   ///
@@ -751,6 +766,7 @@ class VideoCreationOptions {
     required this.viewType,
     this.allowBackgroundPlayback = false,
     this.allowExternalPlayback = true,
+    this.allowAutoPictureInPicture = false,
     this.notificationMetadata,
   });
 
@@ -772,6 +788,12 @@ class VideoCreationOptions {
   ///
   /// Note: This option only affects iOS and macOS.
   final bool allowExternalPlayback;
+
+  /// Whether the player should automatically enter Picture-in-Picture when the
+  /// app goes to the background while video is playing inline.
+  ///
+  /// See [VideoPlayerOptions.allowAutoPictureInPicture] for details.
+  final bool allowAutoPictureInPicture;
 
   /// Metadata for the system media notification.
   ///

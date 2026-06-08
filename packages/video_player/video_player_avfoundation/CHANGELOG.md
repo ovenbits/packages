@@ -1,3 +1,9 @@
+## 2.10.3
+
+- Adds creation-time `allowAutoPictureInPicture` support via `VideoCreationOptions`.
+- Fixes `setAutoPictureInPicture` being ignored when called before the PiP
+  controller is created by storing and applying the preference at setup time.
+
 ## 2.10.2
 
 - Fixes macOS build error caused by `canStartPictureInPictureAutomaticallyFromInline` being unavailable on macOS.

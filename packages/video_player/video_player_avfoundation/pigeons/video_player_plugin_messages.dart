@@ -53,6 +53,7 @@ class CreationOptions {
     required this.uri,
     required this.httpHeaders,
     required this.allowExternalPlayback,
+    this.allowAutoPictureInPicture = false,
     this.backgroundPlayback,
   });
 
@@ -61,6 +62,9 @@ class CreationOptions {
 
   /// Whether to allow video playback on external displays (e.g., AirPlay).
   bool allowExternalPlayback;
+
+  /// Whether to automatically enter Picture-in-Picture when backgrounding.
+  bool allowAutoPictureInPicture;
 
   /// Background playback configuration (optional).
   BackgroundPlaybackMessage? backgroundPlayback;

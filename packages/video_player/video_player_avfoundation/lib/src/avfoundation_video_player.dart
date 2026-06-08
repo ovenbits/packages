@@ -116,6 +116,7 @@ class AVFoundationVideoPlayer extends VideoPlayerPlatform {
       uri: uri,
       httpHeaders: dataSource.httpHeaders,
       allowExternalPlayback: options.allowExternalPlayback,
+      allowAutoPictureInPicture: options.allowAutoPictureInPicture,
       backgroundPlayback: backgroundPlayback,
     );
 

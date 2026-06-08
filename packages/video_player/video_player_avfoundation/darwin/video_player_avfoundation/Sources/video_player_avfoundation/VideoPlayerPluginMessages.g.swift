@@ -73,7 +73,7 @@ private func doubleEqualsVideoPlayerPluginMessages(_ lhs: Double, _ rhs: Double)
 
 private func doubleHashVideoPlayerPluginMessages(_ value: Double, _ hasher: inout Hasher) {
   if value.isNaN {
-    hasher.combine(0x7FF8_0000_0000_0000)
+    hasher.combine(0x7FF8000000000000)
   } else {
     // Normalize -0.0 to 0.0
     hasher.combine(value == 0 ? 0 : value)
@@ -176,11 +176,13 @@ func deepHashVideoPlayerPluginMessages(value: Any?, hasher: inout Hasher) {
   }
 }
 
+
 /// Information passed to the platform view creation.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct PlatformVideoViewCreationParams: Hashable {
   var playerId: Int64
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> PlatformVideoViewCreationParams? {
@@ -195,9 +197,7 @@ struct PlatformVideoViewCreationParams: Hashable {
       playerId
     ]
   }
-  static func == (lhs: PlatformVideoViewCreationParams, rhs: PlatformVideoViewCreationParams)
-    -> Bool
-  {
+  static func == (lhs: PlatformVideoViewCreationParams, rhs: PlatformVideoViewCreationParams) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
@@ -220,6 +220,7 @@ struct NotificationMetadataMessage: Hashable {
   var artist: String? = nil
   var durationMs: Int64? = nil
   var artUri: String? = nil
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> NotificationMetadataMessage? {
@@ -253,12 +254,7 @@ struct NotificationMetadataMessage: Hashable {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return deepEqualsVideoPlayerPluginMessages(lhs.id, rhs.id)
-      && deepEqualsVideoPlayerPluginMessages(lhs.title, rhs.title)
-      && deepEqualsVideoPlayerPluginMessages(lhs.album, rhs.album)
-      && deepEqualsVideoPlayerPluginMessages(lhs.artist, rhs.artist)
-      && deepEqualsVideoPlayerPluginMessages(lhs.durationMs, rhs.durationMs)
-      && deepEqualsVideoPlayerPluginMessages(lhs.artUri, rhs.artUri)
+    return deepEqualsVideoPlayerPluginMessages(lhs.id, rhs.id) && deepEqualsVideoPlayerPluginMessages(lhs.title, rhs.title) && deepEqualsVideoPlayerPluginMessages(lhs.album, rhs.album) && deepEqualsVideoPlayerPluginMessages(lhs.artist, rhs.artist) && deepEqualsVideoPlayerPluginMessages(lhs.durationMs, rhs.durationMs) && deepEqualsVideoPlayerPluginMessages(lhs.artUri, rhs.artUri)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -278,6 +274,7 @@ struct NotificationMetadataMessage: Hashable {
 struct BackgroundPlaybackMessage: Hashable {
   var enableBackground: Bool
   var notificationMetadata: NotificationMetadataMessage? = nil
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> BackgroundPlaybackMessage? {
@@ -299,8 +296,7 @@ struct BackgroundPlaybackMessage: Hashable {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return deepEqualsVideoPlayerPluginMessages(lhs.enableBackground, rhs.enableBackground)
-      && deepEqualsVideoPlayerPluginMessages(lhs.notificationMetadata, rhs.notificationMetadata)
+    return deepEqualsVideoPlayerPluginMessages(lhs.enableBackground, rhs.enableBackground) && deepEqualsVideoPlayerPluginMessages(lhs.notificationMetadata, rhs.notificationMetadata)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -316,20 +312,25 @@ struct CreationOptions: Hashable {
   var httpHeaders: [String: String]
   /// Whether to allow video playback on external displays (e.g., AirPlay).
   var allowExternalPlayback: Bool
+  /// Whether to automatically enter Picture-in-Picture when backgrounding.
+  var allowAutoPictureInPicture: Bool
   /// Background playback configuration (optional).
   var backgroundPlayback: BackgroundPlaybackMessage? = nil
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> CreationOptions? {
     let uri = pigeonVar_list[0] as! String
     let httpHeaders = pigeonVar_list[1] as! [String: String]
     let allowExternalPlayback = pigeonVar_list[2] as! Bool
-    let backgroundPlayback: BackgroundPlaybackMessage? = nilOrValue(pigeonVar_list[3])
+    let allowAutoPictureInPicture = pigeonVar_list[3] as! Bool
+    let backgroundPlayback: BackgroundPlaybackMessage? = nilOrValue(pigeonVar_list[4])
 
     return CreationOptions(
       uri: uri,
       httpHeaders: httpHeaders,
       allowExternalPlayback: allowExternalPlayback,
+      allowAutoPictureInPicture: allowAutoPictureInPicture,
       backgroundPlayback: backgroundPlayback
     )
   }
@@ -338,6 +339,7 @@ struct CreationOptions: Hashable {
       uri,
       httpHeaders,
       allowExternalPlayback,
+      allowAutoPictureInPicture,
       backgroundPlayback,
     ]
   }
@@ -345,10 +347,7 @@ struct CreationOptions: Hashable {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return deepEqualsVideoPlayerPluginMessages(lhs.uri, rhs.uri)
-      && deepEqualsVideoPlayerPluginMessages(lhs.httpHeaders, rhs.httpHeaders)
-      && deepEqualsVideoPlayerPluginMessages(lhs.allowExternalPlayback, rhs.allowExternalPlayback)
-      && deepEqualsVideoPlayerPluginMessages(lhs.backgroundPlayback, rhs.backgroundPlayback)
+    return deepEqualsVideoPlayerPluginMessages(lhs.uri, rhs.uri) && deepEqualsVideoPlayerPluginMessages(lhs.httpHeaders, rhs.httpHeaders) && deepEqualsVideoPlayerPluginMessages(lhs.allowExternalPlayback, rhs.allowExternalPlayback) && deepEqualsVideoPlayerPluginMessages(lhs.allowAutoPictureInPicture, rhs.allowAutoPictureInPicture) && deepEqualsVideoPlayerPluginMessages(lhs.backgroundPlayback, rhs.backgroundPlayback)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -356,6 +355,7 @@ struct CreationOptions: Hashable {
     deepHashVideoPlayerPluginMessages(value: uri, hasher: &hasher)
     deepHashVideoPlayerPluginMessages(value: httpHeaders, hasher: &hasher)
     deepHashVideoPlayerPluginMessages(value: allowExternalPlayback, hasher: &hasher)
+    deepHashVideoPlayerPluginMessages(value: allowAutoPictureInPicture, hasher: &hasher)
     deepHashVideoPlayerPluginMessages(value: backgroundPlayback, hasher: &hasher)
   }
 }
@@ -364,6 +364,7 @@ struct CreationOptions: Hashable {
 struct TexturePlayerIds: Hashable {
   var playerId: Int64
   var textureId: Int64
+
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> TexturePlayerIds? {
@@ -385,8 +386,7 @@ struct TexturePlayerIds: Hashable {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return deepEqualsVideoPlayerPluginMessages(lhs.playerId, rhs.playerId)
-      && deepEqualsVideoPlayerPluginMessages(lhs.textureId, rhs.textureId)
+    return deepEqualsVideoPlayerPluginMessages(lhs.playerId, rhs.playerId) && deepEqualsVideoPlayerPluginMessages(lhs.textureId, rhs.textureId)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -449,8 +449,7 @@ private class VideoPlayerPluginMessagesPigeonCodecReaderWriter: FlutterStandardR
 }
 
 class VideoPlayerPluginMessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
-  static let shared = VideoPlayerPluginMessagesPigeonCodec(
-    readerWriter: VideoPlayerPluginMessagesPigeonCodecReaderWriter())
+  static let shared = VideoPlayerPluginMessagesPigeonCodec(readerWriter: VideoPlayerPluginMessagesPigeonCodecReaderWriter())
 }
 
 /// Generated protocol from Pigeon that represents a handler of messages from Flutter.
@@ -467,15 +466,9 @@ protocol AVFoundationVideoPlayerApi {
 class AVFoundationVideoPlayerApiSetup {
   static var codec: FlutterStandardMessageCodec { VideoPlayerPluginMessagesPigeonCodec.shared }
   /// Sets up an instance of `AVFoundationVideoPlayerApi` to handle messages through the `binaryMessenger`.
-  static func setUp(
-    binaryMessenger: FlutterBinaryMessenger, api: AVFoundationVideoPlayerApi?,
-    messageChannelSuffix: String = ""
-  ) {
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: AVFoundationVideoPlayerApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
-    let initializeChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.initialize\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let initializeChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.initialize\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       initializeChannel.setMessageHandler { _, reply in
         do {
@@ -488,10 +481,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       initializeChannel.setMessageHandler(nil)
     }
-    let createForPlatformViewChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForPlatformView\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let createForPlatformViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForPlatformView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       createForPlatformViewChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -506,10 +496,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       createForPlatformViewChannel.setMessageHandler(nil)
     }
-    let createForTextureViewChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForTextureView\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let createForTextureViewChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.createForTextureView\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       createForTextureViewChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -524,10 +511,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       createForTextureViewChannel.setMessageHandler(nil)
     }
-    let setMixWithOthersChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.setMixWithOthers\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let setMixWithOthersChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.setMixWithOthers\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       setMixWithOthersChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -542,10 +526,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       setMixWithOthersChannel.setMessageHandler(nil)
     }
-    let getAssetUrlChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.getAssetUrl\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let getAssetUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.getAssetUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       getAssetUrlChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
@@ -561,10 +542,7 @@ class AVFoundationVideoPlayerApiSetup {
     } else {
       getAssetUrlChannel.setMessageHandler(nil)
     }
-    let isPictureInPictureSupportedChannel = FlutterBasicMessageChannel(
-      name:
-        "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.isPictureInPictureSupported\(channelSuffix)",
-      binaryMessenger: binaryMessenger, codec: codec)
+    let isPictureInPictureSupportedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.video_player_avfoundation.AVFoundationVideoPlayerApi.isPictureInPictureSupported\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       isPictureInPictureSupportedChannel.setMessageHandler { _, reply in
         do {

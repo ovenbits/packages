@@ -21,6 +21,16 @@ void main() {
     expect(options.allowExternalPlayback, true);
   });
 
+  test('VideoPlayerOptions allowAutoPictureInPicture defaults to false', () {
+    final options = VideoPlayerOptions();
+    expect(options.allowAutoPictureInPicture, false);
+  });
+
+  test('VideoPlayerOptions accepts allowAutoPictureInPicture', () {
+    final options = VideoPlayerOptions(allowAutoPictureInPicture: true);
+    expect(options.allowAutoPictureInPicture, true);
+  });
+
   test('VideoPlayerOptions notificationMetadata defaults to null', () {
     final options = VideoPlayerOptions();
     expect(options.notificationMetadata, isNull);

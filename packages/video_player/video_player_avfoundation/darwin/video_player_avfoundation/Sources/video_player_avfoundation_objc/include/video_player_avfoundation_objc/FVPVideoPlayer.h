@@ -29,6 +29,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly) BOOL disposed;
 /// Indicates whether the video player is set to loop.
 @property(nonatomic) BOOL isLooping;
+/// Whether Picture-in-Picture should start automatically when backgrounding.
+@property(nonatomic) BOOL allowAutoPictureInPicture;
 /// The current playback position of the video, in milliseconds.
 @property(nonatomic, readonly) int64_t position;
 /// The event listener to report video events to.

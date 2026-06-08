@@ -83,11 +83,18 @@ class PlatformVideoViewCreationParams {
 }
 
 class CreationOptions {
-  CreationOptions({required this.uri, required this.httpHeaders});
+  CreationOptions({
+    required this.uri,
+    required this.httpHeaders,
+    this.allowAutoPictureInPicture = false,
+  });
   String uri;
   PlatformVideoFormat? formatHint;
   Map<String, String> httpHeaders;
   String? userAgent;
+
+  /// Whether to automatically enter Picture-in-Picture when backgrounding.
+  bool allowAutoPictureInPicture;
 
   /// Background playback configuration (optional).
   BackgroundPlaybackMessage? backgroundPlayback;

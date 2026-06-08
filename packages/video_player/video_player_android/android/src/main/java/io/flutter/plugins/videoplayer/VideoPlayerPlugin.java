@@ -115,7 +115,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
             videoAsset,
             sharedOptions);
 
-    registerPlayerInstance(videoPlayer, id, options.getBackgroundPlayback());
+    registerPlayerInstance(videoPlayer, id, options);
     return id;
   }
 
@@ -135,7 +135,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
             videoAsset,
             sharedOptions);
 
-    registerPlayerInstance(videoPlayer, id, options.getBackgroundPlayback());
+    registerPlayerInstance(videoPlayer, id, options);
     return new TexturePlayerIds(id, handle.id());
   }
 
@@ -167,14 +167,18 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
   }
 
   private void registerPlayerInstance(
-      VideoPlayer player, long id, @Nullable BackgroundPlaybackMessage backgroundPlayback) {
+      VideoPlayer player, long id, @NonNull CreationOptions options) {
     // Set up background playback context
     player.setBackgroundPlaybackContext(flutterState.applicationContext, (int) id);
 
     // Configure background playback if requested
+    @Nullable BackgroundPlaybackMessage backgroundPlayback = options.getBackgroundPlayback();
     if (backgroundPlayback != null) {
       player.configureBackgroundPlayback(backgroundPlayback);
     }
+
+    autoPipPlayers.put(id, options.getAllowAutoPictureInPicture());
+    applyAutoPictureInPictureParams(id);
 
     // Set up the instance-specific API handler, and make sure it is removed when the player is
     // disposed.
@@ -208,6 +212,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
     VideoPlayer player = getPlayer(playerId);
     player.dispose();
     videoPlayers.remove(playerId);
+    autoPipPlayers.remove(playerId);
   }
 
   @Override
@@ -226,6 +231,9 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
   public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
     activity = binding.getActivity();
     registerPipComponentCallbacks();
+    for (int i = 0; i < autoPipPlayers.size(); i++) {
+      applyAutoPictureInPictureParams(autoPipPlayers.keyAt(i));
+    }
   }
 
   @Override
@@ -316,12 +324,7 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
   @Override
   public void setAutoPictureInPicture(long playerId, boolean enabled) {
     autoPipPlayers.put(playerId, enabled);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && activity != null) {
-      PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
-      builder.setAutoEnterEnabled(enabled);
-      builder.setAspectRatio(getVideoAspectRatio(playerId));
-      activity.setPictureInPictureParams(builder.build());
-    }
+    applyAutoPictureInPictureParams(playerId);
   }
 
   @Override
@@ -330,10 +333,26 @@ public class VideoPlayerPlugin implements FlutterPlugin, ActivityAware, AndroidV
       return;
     }
     List<RemoteAction> remoteActions = buildRemoteActions(actions);
-    PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+    PictureInPictureParams.Builder builder = newPictureInPictureParamsBuilder(playerId);
     builder.setActions(remoteActions);
-    builder.setAspectRatio(getVideoAspectRatio(playerId));
     activity.setPictureInPictureParams(builder.build());
+  }
+
+  private void applyAutoPictureInPictureParams(long playerId) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || activity == null) {
+      return;
+    }
+    activity.setPictureInPictureParams(newPictureInPictureParamsBuilder(playerId).build());
+  }
+
+  @NonNull
+  private PictureInPictureParams.Builder newPictureInPictureParamsBuilder(long playerId) {
+    PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+    builder.setAspectRatio(getVideoAspectRatio(playerId));
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      builder.setAutoEnterEnabled(autoPipPlayers.get(playerId, false));
+    }
+    return builder;
   }
 
   @NonNull

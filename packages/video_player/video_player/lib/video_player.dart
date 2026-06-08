@@ -471,6 +471,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       viewType: viewType,
       allowBackgroundPlayback: videoPlayerOptions?.allowBackgroundPlayback ?? false,
       allowExternalPlayback: videoPlayerOptions?.allowExternalPlayback ?? true,
+      allowAutoPictureInPicture: videoPlayerOptions?.allowAutoPictureInPicture ?? false,
       notificationMetadata: videoPlayerOptions?.notificationMetadata,
     );
 
@@ -824,6 +825,9 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   }
 
   /// Enables or disables automatic entry into Picture-in-Picture mode.
+  ///
+  /// This overrides [VideoPlayerOptions.allowAutoPictureInPicture] if that was
+  /// set when the controller was created.
   Future<void> setAutoPictureInPicture(bool enabled) async {
     if (_isDisposedOrNotInitialized) {
       return;

@@ -99,6 +99,7 @@ class VideoPlayerPlugin extends VideoPlayerPlatform {
     );
 
     final player = VideoPlayer(videoElement: videoElement)..initialize(src: uri);
+    player.setAutoPictureInPicture(options.allowAutoPictureInPicture);
 
     _videoPlayers[playerId] = player;
 

@@ -124,6 +124,7 @@ class AndroidVideoPlayer extends VideoPlayerPlatform {
       httpHeaders: httpHeaders,
       userAgent: userAgent,
       formatHint: formatHint,
+      allowAutoPictureInPicture: options.allowAutoPictureInPicture,
       backgroundPlayback: backgroundPlayback,
     );
 

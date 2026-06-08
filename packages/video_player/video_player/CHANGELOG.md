@@ -2,6 +2,12 @@
 
 - Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
 
+## 2.11.2
+
+- Adds `allowAutoPictureInPicture` to `VideoPlayerOptions` for creation-time
+  automatic PiP configuration. `setAutoPictureInPicture` continues to work as a
+  runtime override.
+
 ## 2.11.1
 
 - Optimizes caption retrieval with binary search.
