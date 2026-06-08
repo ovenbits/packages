@@ -7,8 +7,7 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(
   PigeonOptions(
     dartOut: 'lib/src/messages.g.dart',
-    kotlinOut:
-        'android/src/main/kotlin/io/flutter/plugins/videoplayer/Messages.kt',
+    kotlinOut: 'android/src/main/kotlin/io/flutter/plugins/videoplayer/Messages.kt',
     kotlinOptions: KotlinOptions(package: 'io.flutter.plugins.videoplayer'),
     copyrightHeader: 'pigeons/copyright.txt',
   ),
@@ -67,14 +66,7 @@ class PictureInPictureStateEvent extends PlatformVideoEvent {
 }
 
 /// Action types for Picture-in-Picture controls.
-enum PipActionType {
-  play,
-  pause,
-  skipForward,
-  skipBackward,
-  nextTrack,
-  previousTrack,
-}
+enum PipActionType { play, pause, skipForward, skipBackward, nextTrack, previousTrack }
 
 /// Represents a Picture-in-Picture action.
 class PipAction {
@@ -195,10 +187,7 @@ class NotificationMetadataMessage {
 
 /// Message for configuring background playback with media notification.
 class BackgroundPlaybackMessage {
-  BackgroundPlaybackMessage({
-    required this.enableBackground,
-    this.notificationMetadata,
-  });
+  BackgroundPlaybackMessage({required this.enableBackground, this.notificationMetadata});
 
   bool enableBackground;
   NotificationMetadataMessage? notificationMetadata;

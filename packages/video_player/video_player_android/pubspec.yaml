@@ -5,8 +5,8 @@ issue_tracker: https://github.com/flutter/flutter/issues?q=is%3Aissue+is%3Aopen+
 version: 2.10.0
 
 environment:
-  sdk: ^3.9.0
-  flutter: ">=3.35.0"
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
 
 flutter:
   plugin:
@@ -35,4 +35,4 @@ topics:
 # FOR TESTING AND INITIAL REVIEW ONLY. DO NOT MERGE.
 # See https://github.com/flutter/flutter/blob/master/docs/ecosystem/contributing/README.md#changing-federated-plugins
 dependency_overrides:
-  video_player_platform_interface: {path: ../video_player_platform_interface}
+  video_player_platform_interface: { path: ../video_player_platform_interface }

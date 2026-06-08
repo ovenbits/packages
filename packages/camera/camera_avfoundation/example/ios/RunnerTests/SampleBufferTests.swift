@@ -7,11 +7,6 @@ import XCTest
 
 @testable import camera_avfoundation
 
-// Import Objective-C part of the implementation when SwiftPM is used.
-#if canImport(camera_avfoundation_objc)
-  import camera_avfoundation_objc
-#endif
-
 private class FakeMediaSettingsAVWrapper: FLTCamMediaSettingsAVWrapper {
   let inputMock: MockAssetWriterInput
 
@@ -66,7 +61,7 @@ private class FakeMediaSettingsAVWrapper: FLTCamMediaSettingsAVWrapper {
   }
 }
 
-/// Includes test cases related to sample buffer handling for FLTCam class.
+/// Includes test cases related to sample buffer handling for Camera class.
 final class CameraSampleBufferTests: XCTestCase {
   private func createCamera() -> (
     DefaultCamera,
@@ -124,7 +119,7 @@ final class CameraSampleBufferTests: XCTestCase {
     let deliveredPixelBuffer = camera.copyPixelBuffer()?.takeRetainedValue()
     XCTAssertEqual(
       deliveredPixelBuffer, capturedPixelBuffer,
-      "FLTCam must deliver the latest captured pixel buffer to copyPixelBuffer API.")
+      "Camera must deliver the latest captured pixel buffer to copyPixelBuffer API.")
   }
 
   func testDidOutputSampleBuffer_mustNotChangeSampleBufferRetainCountAfterPauseResumeRecording() {

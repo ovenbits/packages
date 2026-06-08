@@ -162,9 +162,7 @@ void main() {
         SectionNode('foo', 3, 11, '{{ }}'),
         TextNode('ghi', 22, 25),
       ]);
-      expectNodes((nodes[1] as SectionNode).children, <Node>[
-        TextNode('def', 11, 14),
-      ]);
+      expectNodes((nodes[1] as SectionNode).children, <Node>[TextNode('def', 11, 14)]);
     });
 
     test('parse section standalone tag whitespace', () {
@@ -176,14 +174,11 @@ void main() {
         SectionNode('foo', 4, 12, '{{ }}'),
         TextNode('ghi', 26, 29),
       ]);
-      expectNodes((nodes[1] as SectionNode).children, <Node>[
-        TextNode('def\n', 13, 17),
-      ]);
+      expectNodes((nodes[1] as SectionNode).children, <Node>[TextNode('def\n', 13, 17)]);
     });
 
     test('parse section standalone tag whitespace consecutive', () {
-      const source =
-          'abc\n{{#foo}}\ndef\n{{/foo}}\n{{#foo}}\ndef\n{{/foo}}\nghi';
+      const source = 'abc\n{{#foo}}\ndef\n{{/foo}}\n{{#foo}}\ndef\n{{/foo}}\nghi';
       final parser = Parser(source, 'foo', '{{ }}');
       final List<Node> nodes = parser.parse();
       expectNodes(nodes, <Node>[
@@ -192,22 +187,15 @@ void main() {
         SectionNode('foo', 26, 34, '{{ }}'),
         TextNode('ghi', 48, 51),
       ]);
-      expectNodes((nodes[1] as SectionNode).children, <Node>[
-        TextNode('def\n', 13, 17),
-      ]);
+      expectNodes((nodes[1] as SectionNode).children, <Node>[TextNode('def\n', 13, 17)]);
     });
 
     test('parse section standalone tag whitespace on first line', () {
       const source = '  {{#foo}}  \ndef\n{{/foo}}\nghi';
       final parser = Parser(source, 'foo', '{{ }}');
       final List<Node> nodes = parser.parse();
-      expectNodes(nodes, <Node>[
-        SectionNode('foo', 2, 10, '{{ }}'),
-        TextNode('ghi', 26, 29),
-      ]);
-      expectNodes((nodes[0] as SectionNode).children, <Node>[
-        TextNode('def\n', 13, 17),
-      ]);
+      expectNodes(nodes, <Node>[SectionNode('foo', 2, 10, '{{ }}'), TextNode('ghi', 26, 29)]);
+      expectNodes((nodes[0] as SectionNode).children, <Node>[TextNode('def\n', 13, 17)]);
     });
 
     test('parse section standalone tag whitespace on last line', () {
@@ -215,9 +203,7 @@ void main() {
       final parser = Parser(source, 'foo', '{{ }}');
       final List<Node> nodes = parser.parse();
       expectNodes(nodes, <Node>[SectionNode('foo', 0, 8, '{{ }}')]);
-      expectNodes((nodes[0] as SectionNode).children, <Node>[
-        TextNode('def\n', 8, 12),
-      ]);
+      expectNodes((nodes[0] as SectionNode).children, <Node>[TextNode('def\n', 8, 12)]);
     });
 
     test('parse variable newline', () {
@@ -240,9 +226,7 @@ void main() {
         SectionNode('foo', 5, 13, '{{ }}'),
         TextNode('ghi', 27, 30),
       ]);
-      expectNodes((nodes[1] as SectionNode).children, <Node>[
-        TextNode('def\n', 14, 18),
-      ]);
+      expectNodes((nodes[1] as SectionNode).children, <Node>[TextNode('def\n', 14, 18)]);
     });
 
     test('parse whitespace', () {
@@ -273,22 +257,13 @@ void main() {
         TextNode('>', 31, 32),
       ]);
       expect((nodes[1] as SectionNode).delimiters, equals('| |'));
-      expectNodes((nodes[1] as SectionNode).children, <Node>[
-        TextNode('-', 21, 22),
-      ]);
+      expectNodes((nodes[1] as SectionNode).children, <Node>[TextNode('-', 21, 22)]);
     });
 
     test('corner case strict', () {
       const source = '{{{ #foo }}} {{{ /foo }}}';
       final parser = Parser(source, 'foo', '{{ }}');
-      try {
-        parser.parse();
-        // TODO(stuartmorgan): Restructure test to use throwsA.
-        // ignore: use_test_throws_matchers
-        fail('Should fail.');
-      } on Exception catch (e) {
-        expect(e is TemplateException, isTrue);
-      }
+      expect(() => parser.parse(), throwsA(isA<TemplateException>()));
     });
 
     test('corner case lenient', () {
@@ -327,25 +302,16 @@ void main() {
       ex.toString();
     });
 
-    Exception parseFail(String source) {
-      try {
+    void Function() parseFail(String source) {
+      return () {
         final parser = Parser(source, 'foo', '{{ }}');
         parser.parse();
-        // TODO(stuartmorgan): Restructure test to use throwsA.
-        // ignore: use_test_throws_matchers
-        fail('Did not throw.');
-      } on Exception catch (ex, st) {
-        if (ex is! TemplateException) {
-          print(ex);
-          print(st);
-        }
-        return ex;
-      }
+      };
     }
 
     test('parse eof', () {
-      void expectTemplateEx(Exception ex) =>
-          expect(ex is TemplateException, isTrue);
+      void expectTemplateEx(void Function() shouldThrow) =>
+          expect(shouldThrow, throwsA(isA<TemplateException>()));
 
       expectTemplateEx(parseFail('{{#foo}}{{bar}}{{/foo}'));
       expectTemplateEx(parseFail('{{#foo}}{{bar}}{{/foo'));
@@ -401,15 +367,9 @@ void main() {
 
 bool nodeEqual(Node a, Node b) {
   if (a is TextNode) {
-    return b is TextNode &&
-        a.text == b.text &&
-        a.start == b.start &&
-        a.end == b.end;
+    return b is TextNode && a.text == b.text && a.start == b.start && a.end == b.end;
   } else if (a is VariableNode && b is VariableNode) {
-    return a.name == b.name &&
-        a.escape == b.escape &&
-        a.start == b.start &&
-        a.end == b.end;
+    return a.name == b.name && a.escape == b.escape && a.start == b.start && a.end == b.end;
   } else if (a is SectionNode && b is SectionNode) {
     return a.name == b.name &&
         a.delimiters == b.delimiters &&
@@ -424,10 +384,7 @@ bool nodeEqual(Node a, Node b) {
 }
 
 bool tokenEqual(Token a, Token b) {
-  return a.type == b.type &&
-      a.value == b.value &&
-      a.start == b.start &&
-      a.end == b.end;
+  return a.type == b.type && a.value == b.value && a.start == b.start && a.end == b.end;
 }
 
 void expectTokens(List<Token> a, List<Token> b) {

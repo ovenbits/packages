@@ -1,8 +1,12 @@
+## NEXT
+
+- Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
+
 ## 2.5.0
 
 - Adds background playback with system media notification support.
 - Adds Picture-in-Picture (PiP) support for web.
-- Updates minimum supported SDK version to Flutter 3.35/Dart 3.9.
+- Updates minimum supported SDK version to Flutter 3.38/Dart 3.10.
 
 ## 2.4.0
 

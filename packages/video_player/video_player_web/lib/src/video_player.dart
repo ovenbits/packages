@@ -111,19 +111,13 @@ class VideoPlayer {
 
     _videoElement.onPlay.listen((dynamic _) {
       _eventController.add(
-        VideoEvent(
-          eventType: VideoEventType.isPlayingStateUpdate,
-          isPlaying: true,
-        ),
+        VideoEvent(eventType: VideoEventType.isPlayingStateUpdate, isPlaying: true),
       );
     });
 
     _videoElement.onPause.listen((dynamic _) {
       _eventController.add(
-        VideoEvent(
-          eventType: VideoEventType.isPlayingStateUpdate,
-          isPlaying: false,
-        ),
+        VideoEvent(eventType: VideoEventType.isPlayingStateUpdate, isPlaying: false),
       );
     });
 
@@ -133,24 +127,14 @@ class VideoPlayer {
     });
 
     _onEnterPictureInPicture = ((web.Event _) {
-      _eventController.add(
-        VideoEvent(eventType: VideoEventType.pictureInPictureStarted),
-      );
+      _eventController.add(VideoEvent(eventType: VideoEventType.pictureInPictureStarted));
     }).toJS;
-    _videoElement.addEventListener(
-      'enterpictureinpicture',
-      _onEnterPictureInPicture,
-    );
+    _videoElement.addEventListener('enterpictureinpicture', _onEnterPictureInPicture);
 
     _onLeavePictureInPicture = ((web.Event _) {
-      _eventController.add(
-        VideoEvent(eventType: VideoEventType.pictureInPictureStopped),
-      );
+      _eventController.add(VideoEvent(eventType: VideoEventType.pictureInPictureStopped));
     }).toJS;
-    _videoElement.addEventListener(
-      'leavepictureinpicture',
-      _onLeavePictureInPicture,
-    );
+    _videoElement.addEventListener('leavepictureinpicture', _onLeavePictureInPicture);
 
     _onVisibilityChange = ((web.Event _) {
       if (_autoPictureInPicture &&
@@ -332,9 +316,7 @@ class VideoPlayer {
       if (e is web.DOMException) {
         throw PlatformException(
           code: e.name,
-          message: e.message.isNotEmpty
-              ? e.message
-              : 'Failed to enter Picture-in-Picture mode.',
+          message: e.message.isNotEmpty ? e.message : 'Failed to enter Picture-in-Picture mode.',
           details: 'requestPictureInPicture() rejected by browser.',
         );
       }
@@ -356,9 +338,7 @@ class VideoPlayer {
       if (e is web.DOMException) {
         throw PlatformException(
           code: e.name,
-          message: e.message.isNotEmpty
-              ? e.message
-              : 'Failed to exit Picture-in-Picture mode.',
+          message: e.message.isNotEmpty ? e.message : 'Failed to exit Picture-in-Picture mode.',
           details: 'exitPictureInPicture() rejected by browser.',
         );
       }
@@ -407,8 +387,7 @@ class VideoPlayer {
           PictureInPictureActionType.previousTrack => 'previoustrack',
         };
 
-        final web.MediaSessionActionHandler handler =
-            _createMediaSessionHandler(action.type);
+        final web.MediaSessionActionHandler handler = _createMediaSessionHandler(action.type);
         mediaSession.setActionHandler(actionName, handler);
         _activeMediaSessionActions.add(actionName);
       }
@@ -423,9 +402,7 @@ class VideoPlayer {
 
   /// Creates a [web.MediaSessionActionHandler] for the given action type
   /// that performs the corresponding operation on the video element.
-  web.MediaSessionActionHandler _createMediaSessionHandler(
-    PictureInPictureActionType type,
-  ) {
+  web.MediaSessionActionHandler _createMediaSessionHandler(PictureInPictureActionType type) {
     switch (type) {
       case PictureInPictureActionType.play:
         return ((JSAny? details) {
@@ -462,17 +439,11 @@ class VideoPlayer {
       _onContextMenu = null;
     }
     if (_onEnterPictureInPicture != null) {
-      _videoElement.removeEventListener(
-        'enterpictureinpicture',
-        _onEnterPictureInPicture,
-      );
+      _videoElement.removeEventListener('enterpictureinpicture', _onEnterPictureInPicture);
       _onEnterPictureInPicture = null;
     }
     if (_onLeavePictureInPicture != null) {
-      _videoElement.removeEventListener(
-        'leavepictureinpicture',
-        _onLeavePictureInPicture,
-      );
+      _videoElement.removeEventListener('leavepictureinpicture', _onLeavePictureInPicture);
       _onLeavePictureInPicture = null;
     }
     if (_onVisibilityChange != null) {
@@ -508,23 +479,14 @@ class VideoPlayer {
 
   // Sends an [VideoEventType.initialized] [VideoEvent] with info about the wrapped video.
   void _sendInitialized() {
-    final Duration? duration = convertNumVideoDurationToPluginDuration(
-      _videoElement.duration,
-    );
+    final Duration? duration = convertNumVideoDurationToPluginDuration(_videoElement.duration);
 
     final Size? size = _videoElement.videoHeight.isFinite
-        ? Size(
-            _videoElement.videoWidth.toDouble(),
-            _videoElement.videoHeight.toDouble(),
-          )
+        ? Size(_videoElement.videoWidth.toDouble(), _videoElement.videoHeight.toDouble())
         : null;
 
     _eventController.add(
-      VideoEvent(
-        eventType: VideoEventType.initialized,
-        duration: duration,
-        size: size,
-      ),
+      VideoEvent(eventType: VideoEventType.initialized, duration: duration, size: size),
     );
   }
 
@@ -538,9 +500,7 @@ class VideoPlayer {
       _isBuffering = buffering;
       _eventController.add(
         VideoEvent(
-          eventType: _isBuffering
-              ? VideoEventType.bufferingStart
-              : VideoEventType.bufferingEnd,
+          eventType: _isBuffering ? VideoEventType.bufferingStart : VideoEventType.bufferingEnd,
         ),
       );
     }

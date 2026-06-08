@@ -6,11 +6,6 @@ import XCTest
 
 @testable import camera_avfoundation
 
-// Import Objective-C part of the implementation when SwiftPM is used.
-#if canImport(camera_avfoundation_objc)
-  import camera_avfoundation_objc
-#endif
-
 final class CameraPluginCreateCameraTests: XCTestCase {
   private func createCameraPlugin() -> (
     CameraPlugin, MockCameraPermissionManager, MockCaptureSession
@@ -103,7 +98,7 @@ final class CameraPluginCreateCameraTests: XCTestCase {
     XCTAssertTrue(requestAudioPermissionCalled)
   }
 
-  func testCreateCamera_createsFLTCamSuccessfully() {
+  func testCreateCamera_createsCameraSuccessfully() {
     let (cameraPlugin, mockPermissionManager, mockCaptureSession) = createCameraPlugin()
     let expectation = expectation(description: "Initialization completed")
 

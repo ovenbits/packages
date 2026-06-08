@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math show max;
 
+import 'package:collection/collection.dart' as collection;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -68,16 +69,11 @@ class VideoPlayerValue {
   });
 
   /// Returns an instance for a video that hasn't been loaded.
-  const VideoPlayerValue.uninitialized()
-    : this(duration: Duration.zero, isInitialized: false);
+  const VideoPlayerValue.uninitialized() : this(duration: Duration.zero, isInitialized: false);
 
   /// Returns an instance with the given [errorDescription].
   const VideoPlayerValue.erroneous(String errorDescription)
-    : this(
-        duration: Duration.zero,
-        isInitialized: false,
-        errorDescription: errorDescription,
-      );
+    : this(duration: Duration.zero, isInitialized: false, errorDescription: errorDescription);
 
   /// This constant is just to indicate that parameter is not passed to [copyWith]
   /// workaround for this issue https://github.com/dart-lang/language/issues/2009
@@ -202,8 +198,7 @@ class VideoPlayerValue {
           ? errorDescription
           : this.errorDescription,
       isCompleted: isCompleted ?? this.isCompleted,
-      isPictureInPictureActive:
-          isPictureInPictureActive ?? this.isPictureInPictureActive,
+      isPictureInPictureActive: isPictureInPictureActive ?? this.isPictureInPictureActive,
     );
   }
 
@@ -418,6 +413,8 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
   Future<ClosedCaptionFile>? _closedCaptionFileFuture;
   ClosedCaptionFile? _closedCaptionFile;
+  List<Caption>? _sortedCaptions;
+
   Timer? _timer;
   bool _isDisposed = false;
   Completer<void>? _creatingCompleter;
@@ -437,8 +434,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
 
   /// Attempts to open the given [dataSource] and load metadata about the video.
   Future<void> initialize() async {
-    final bool allowBackgroundPlayback =
-        videoPlayerOptions?.allowBackgroundPlayback ?? false;
+    final bool allowBackgroundPlayback = videoPlayerOptions?.allowBackgroundPlayback ?? false;
     if (!allowBackgroundPlayback) {
       _lifeCycleObserver = _VideoAppLifeCycleObserver(this);
     }
@@ -467,39 +463,29 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           httpHeaders: httpHeaders,
         );
       case DataSourceType.contentUri:
-        dataSourceDescription = DataSource(
-          sourceType: DataSourceType.contentUri,
-          uri: dataSource,
-        );
+        dataSourceDescription = DataSource(sourceType: DataSourceType.contentUri, uri: dataSource);
     }
 
     final creationOptions = VideoCreationOptions(
       dataSource: dataSourceDescription,
       viewType: viewType,
-      allowBackgroundPlayback:
-          videoPlayerOptions?.allowBackgroundPlayback ?? false,
+      allowBackgroundPlayback: videoPlayerOptions?.allowBackgroundPlayback ?? false,
       allowExternalPlayback: videoPlayerOptions?.allowExternalPlayback ?? true,
       notificationMetadata: videoPlayerOptions?.notificationMetadata,
     );
 
     if (videoPlayerOptions?.mixWithOthers != null) {
-      await _videoPlayerPlatform.setMixWithOthers(
-        videoPlayerOptions!.mixWithOthers,
-      );
+      await _videoPlayerPlatform.setMixWithOthers(videoPlayerOptions!.mixWithOthers);
     }
 
     _playerId =
-        (await _videoPlayerPlatform.createWithOptions(creationOptions)) ??
-        kUninitializedPlayerId;
+        (await _videoPlayerPlatform.createWithOptions(creationOptions)) ?? kUninitializedPlayerId;
     _creatingCompleter!.complete(null);
     _initializingCompleter = Completer<void>();
 
     // Apply the web-specific options
     if (kIsWeb && videoPlayerOptions?.webOptions != null) {
-      await _videoPlayerPlatform.setWebOptions(
-        _playerId,
-        videoPlayerOptions!.webOptions!,
-      );
+      await _videoPlayerPlatform.setWebOptions(_playerId, videoPlayerOptions!.webOptions!);
     }
 
     void eventListener(VideoEvent event) {
@@ -546,10 +532,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
           value = value.copyWith(isBuffering: false);
         case VideoEventType.isPlayingStateUpdate:
           if (event.isPlaying ?? false) {
-            value = value.copyWith(
-              isPlaying: event.isPlaying,
-              isCompleted: false,
-            );
+            value = value.copyWith(isPlaying: event.isPlaying, isCompleted: false);
           } else {
             value = value.copyWith(isPlaying: event.isPlaying);
           }
@@ -651,9 +634,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
       await _videoPlayerPlatform.play(_playerId);
 
       _timer?.cancel();
-      _timer = Timer.periodic(const Duration(milliseconds: 100), (
-        Timer timer,
-      ) async {
+      _timer = Timer.periodic(const Duration(milliseconds: 100), (Timer timer) async {
         if (_isDisposed) {
           return;
         }
@@ -750,10 +731,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   ///   the plugin also reports errors.
   Future<void> setPlaybackSpeed(double speed) async {
     if (speed < 0) {
-      throw ArgumentError.value(
-        speed,
-        'Negative playback speeds are generally unsupported.',
-      );
+      throw ArgumentError.value(speed, 'Negative playback speeds are generally unsupported.');
     } else if (speed == 0) {
       throw ArgumentError.value(
         speed,
@@ -784,9 +762,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// Throws [StateError] if called before [initialize] completes.
   Future<void> selectAudioTrack(String trackId) async {
     if (_isDisposedOrNotInitialized) {
-      throw StateError(
-        'Cannot select audio track before initialization or after dispose',
-      );
+      throw StateError('Cannot select audio track before initialization or after dispose');
     }
     await _videoPlayerPlatform.selectAudioTrack(_playerId, trackId);
   }
@@ -807,8 +783,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
     if (_isDisposed) {
       return false;
     }
-    if (_initializingCompleter != null &&
-        !_initializingCompleter!.isCompleted) {
+    if (_initializingCompleter != null && !_initializingCompleter!.isCompleted) {
       await _initializingCompleter!.future;
     }
     if (_isDisposedOrNotInitialized) {
@@ -857,9 +832,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   }
 
   /// Sets the actions displayed in Picture-in-Picture controls.
-  Future<void> setPictureInPictureActions(
-    List<PictureInPictureAction> actions,
-  ) async {
+  Future<void> setPictureInPictureActions(List<PictureInPictureAction> actions) async {
     if (_isDisposedOrNotInitialized) {
       return;
     }
@@ -876,10 +849,7 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// * >0: The caption will have a negative offset. So you will get caption text from the past.
   /// * <0: The caption will have a positive offset. So you will get caption text from the future.
   void setCaptionOffset(Duration offset) {
-    value = value.copyWith(
-      captionOffset: offset,
-      caption: _getCaptionAt(value.position),
-    );
+    value = value.copyWith(captionOffset: offset, caption: _getCaptionAt(value.position));
   }
 
   /// The closed caption based on the current [position] in the video.
@@ -889,20 +859,36 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   ///
   /// If no [closedCaptionFile] was specified, this will always return an empty
   /// [Caption].
+
   Caption _getCaptionAt(Duration position) {
-    if (_closedCaptionFile == null) {
+    final List<Caption>? sortedCaptions = _sortedCaptions;
+    if (_closedCaptionFile == null || sortedCaptions == null) {
       return Caption.none;
     }
 
     final Duration delayedPosition = position + value.captionOffset;
-    // TODO(johnsonmh): This would be more efficient as a binary search.
-    for (final Caption caption in _closedCaptionFile!.captions) {
-      if (caption.start <= delayedPosition && caption.end >= delayedPosition) {
-        return caption;
-      }
+
+    final int captionIndex = collection.binarySearch<Caption>(
+      sortedCaptions,
+      Caption(number: -1, start: delayedPosition, end: delayedPosition, text: ''),
+      compare: (Caption candidate, Caption search) {
+        if (search.start < candidate.start) {
+          return 1;
+        } else if (search.start > candidate.end) {
+          return -1;
+        } else {
+          // delayedPosition is within [candidate.start, candidate.end]
+          return 0;
+        }
+      },
+    );
+
+    // -1 means not found by the binary search.
+    if (captionIndex == -1) {
+      return Caption.none;
     }
 
-    return Caption.none;
+    return sortedCaptions[captionIndex];
   }
 
   /// Returns the file containing closed captions for the video, if any.
@@ -913,18 +899,29 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// Sets a closed caption file.
   ///
   /// If [closedCaptionFile] is null, closed captions will be removed.
-  Future<void> setClosedCaptionFile(
-    Future<ClosedCaptionFile>? closedCaptionFile,
-  ) async {
-    await _updateClosedCaptionWithFuture(closedCaptionFile);
+  Future<void> setClosedCaptionFile(Future<ClosedCaptionFile>? closedCaptionFile) async {
     _closedCaptionFileFuture = closedCaptionFile;
+    // Reset sorted captions to force re-sort when setting a new file
+    _sortedCaptions = null;
+    await _updateClosedCaptionWithFuture(closedCaptionFile);
   }
 
-  Future<void> _updateClosedCaptionWithFuture(
-    Future<ClosedCaptionFile>? closedCaptionFile,
-  ) async {
-    _closedCaptionFile = await closedCaptionFile;
-    value = value.copyWith(caption: _getCaptionAt(value.position));
+  Future<void> _updateClosedCaptionWithFuture(Future<ClosedCaptionFile>? closedCaptionFile) async {
+    if (closedCaptionFile != null) {
+      _closedCaptionFile = await closedCaptionFile;
+
+      // Only sort if we haven't sorted yet (first initialization)
+      _sortedCaptions ??= List<Caption>.from(_closedCaptionFile!.captions)
+        ..sort((Caption a, Caption b) {
+          return a.start.compareTo(b.start);
+        });
+
+      value = value.copyWith(caption: _getCaptionAt(value.position));
+    } else {
+      _closedCaptionFile = null;
+      _sortedCaptions = null;
+      value = value.copyWith(caption: Caption.none);
+    }
   }
 
   void _updatePosition(Duration position) {
@@ -1015,8 +1012,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
   void initState() {
     super.initState();
     _playerId = widget.controller.playerId;
-    _isPictureInPictureActive =
-        widget.controller.value.isPictureInPictureActive;
+    _isPictureInPictureActive = widget.controller.value.isPictureInPictureActive;
     // Need to listen for initialization events since the actual widget ID
     // becomes available after asynchronous initialization finishes.
     widget.controller.addListener(_controllerDidUpdateValue);
@@ -1027,8 +1023,7 @@ class _VideoPlayerState extends State<VideoPlayer> {
     super.didUpdateWidget(oldWidget);
     oldWidget.controller.removeListener(_controllerDidUpdateValue);
     _playerId = widget.controller.playerId;
-    _isPictureInPictureActive =
-        widget.controller.value.isPictureInPictureActive;
+    _isPictureInPictureActive = widget.controller.value.isPictureInPictureActive;
     widget.controller.addListener(_controllerDidUpdateValue);
   }
 
@@ -1047,15 +1042,12 @@ class _VideoPlayerState extends State<VideoPlayer> {
     // into the PiP window, so the video texture must remain visible.
     // On iOS/macOS/web, PiP creates a separate system overlay, so hiding the
     // main widget avoids duplicate rendering.
-    if (_isPictureInPictureActive &&
-        defaultTargetPlatform != TargetPlatform.android) {
+    if (_isPictureInPictureActive && defaultTargetPlatform != TargetPlatform.android) {
       return Container();
     }
     return _VideoPlayerWithRotation(
       rotation: widget.controller.value.rotationCorrection,
-      child: _videoPlayerPlatform.buildViewWithOptions(
-        VideoViewOptions(playerId: _playerId),
-      ),
+      child: _videoPlayerPlatform.buildViewWithOptions(VideoViewOptions(playerId: _playerId)),
     );
   }
 }
@@ -1122,11 +1114,7 @@ class VideoScrubber extends StatefulWidget {
   ///
   /// [controller] is the [VideoPlayerController] that will be controlled by
   /// this scrubber.
-  const VideoScrubber({
-    super.key,
-    required this.child,
-    required this.controller,
-  });
+  const VideoScrubber({super.key, required this.child, required this.controller});
 
   /// The widget that will be displayed inside the gesture detector.
   final Widget child;
@@ -1172,8 +1160,7 @@ class _VideoScrubberState extends State<VideoScrubber> {
         seekToRelativePosition(details.globalPosition);
       },
       onHorizontalDragEnd: (DragEndDetails details) {
-        if (_controllerWasPlaying &&
-            controller.value.position != controller.value.duration) {
+        if (_controllerWasPlaying && controller.value.position != controller.value.duration) {
           controller.play();
         }
       },
@@ -1296,10 +1283,7 @@ class _VideoProgressIndicatorState extends State<VideoProgressIndicator> {
       child: progressIndicator,
     );
     if (widget.allowScrubbing) {
-      return VideoScrubber(
-        controller: controller,
-        child: paddedProgressIndicator,
-      );
+      return VideoScrubber(controller: controller, child: paddedProgressIndicator);
     } else {
       return paddedProgressIndicator;
     }
@@ -1351,9 +1335,7 @@ class ClosedCaption extends StatelessWidget {
 
     final TextStyle effectiveTextStyle =
         textStyle ??
-        DefaultTextStyle.of(
-          context,
-        ).style.copyWith(fontSize: 36.0, color: Colors.white);
+        DefaultTextStyle.of(context).style.copyWith(fontSize: 36.0, color: Colors.white);
 
     return Align(
       alignment: Alignment.bottomCenter,

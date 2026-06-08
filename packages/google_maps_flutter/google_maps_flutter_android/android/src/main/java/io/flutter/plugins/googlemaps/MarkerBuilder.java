@@ -4,22 +4,22 @@
 
 package io.flutter.plugins.googlemaps;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.gms.maps.model.AdvancedMarkerOptions;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.maps.android.clustering.ClusterItem;
-import io.flutter.plugins.googlemaps.Messages.PlatformMarkerType;
 
 class MarkerBuilder implements MarkerOptionsSink, ClusterItem {
-  private final MarkerOptions markerOptions;
-  @Nullable private final AdvancedMarkerOptions advancedMarkerOptions;
-  private String clusterManagerId;
-  private String markerId;
+  private final @NonNull MarkerOptions markerOptions;
+  private final @Nullable AdvancedMarkerOptions advancedMarkerOptions;
+  private final String clusterManagerId;
+  private final String markerId;
   private boolean consumeTapEvents;
 
-  MarkerBuilder(String markerId, String clusterManagerId, PlatformMarkerType markerType) {
+  MarkerBuilder(String markerId, String clusterManagerId, @NonNull PlatformMarkerType markerType) {
     switch (markerType) {
       case ADVANCED_MARKER:
         this.advancedMarkerOptions = new AdvancedMarkerOptions();
@@ -137,7 +137,7 @@ class MarkerBuilder implements MarkerOptionsSink, ClusterItem {
   }
 
   @Override
-  public LatLng getPosition() {
+  public @NonNull LatLng getPosition() {
     return markerOptions.getPosition();
   }
 
