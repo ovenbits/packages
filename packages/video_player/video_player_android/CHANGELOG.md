@@ -1,3 +1,8 @@
+## 2.10.2
+
+- Fixes Android build failure by restoring the `media3-session` Gradle dependency
+  required for background playback.
+
 ## 2.10.1
 
 - Adds creation-time `allowAutoPictureInPicture` support via `VideoCreationOptions`.
