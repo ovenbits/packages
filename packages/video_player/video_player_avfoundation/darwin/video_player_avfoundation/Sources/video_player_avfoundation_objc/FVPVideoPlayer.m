@@ -87,6 +87,8 @@ static NSDictionary<NSString *, NSValue *> *FVPGetPlayerItemObservations(void) {
   // A standalone AVPlayerLayer created by the base class for PiP when no subclass-provided
   // layer is available. Cleaned up on dispose.
   AVPlayerLayer *_pipPlayerLayer;
+  // Bumped when scheduling or cancelling stall-recovery timers so stale callbacks no-op.
+  NSUInteger _stallRecoveryGeneration;
 }
 
 - (instancetype)initWithPlayerItem:(NSObject<FVPAVPlayerItem> *)item
@@ -194,6 +196,7 @@ static NSDictionary<NSString *, NSValue *> *FVPGetPlayerItemObservations(void) {
     return;
   }
   _disposed = YES;
+  _stallRecoveryGeneration++;
 
   // Clean up background playback resources
 #if TARGET_OS_IOS
@@ -271,7 +274,7 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   }
   // Output degrees in between [0, 360]
   return degrees;
-};
+}
 
 - (AVMutableVideoComposition *)videoCompositionWithTransform:(CGAffineTransform)transform
                                                        asset:(NSObject<FVPAVAsset> *)asset
@@ -282,7 +285,7 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   AVMutableVideoCompositionLayerInstruction *layerInstruction =
       [AVMutableVideoCompositionLayerInstruction
           videoCompositionLayerInstructionWithAssetTrack:videoTrack];
-  [layerInstruction setTransform:_preferredTransform atTime:kCMTimeZero];
+  [layerInstruction setTransform:transform atTime:kCMTimeZero];
 
   AVMutableVideoComposition *videoComposition = [AVMutableVideoComposition videoComposition];
   instruction.layerInstructions = @[ layerInstruction ];
@@ -291,8 +294,7 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   // If in portrait mode, switch the width and height of the video
   CGFloat width = videoTrack.naturalSize.width;
   CGFloat height = videoTrack.naturalSize.height;
-  NSInteger rotationDegrees =
-      (NSInteger)round(radiansToDegrees(atan2(_preferredTransform.b, _preferredTransform.a)));
+  NSInteger rotationDegrees = (NSInteger)round(radiansToDegrees(atan2(transform.b, transform.a)));
   if (rotationDegrees == 90 || rotationDegrees == 270) {
     width = videoTrack.naturalSize.height;
     height = videoTrack.naturalSize.width;
@@ -340,10 +342,9 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
     [self scheduleStallRecovery];
   } else if (context == playbackBufferFullContext) {
     if (_isPlaying && _isInitialized) {
-      if (@available(iOS 10.0, macOS 10.12, *)) {
-        [_player playImmediatelyAtRate:1.0];
-      } else {
-        [_player play];
+      [self resumePlaybackImmediately];
+      if ([[_player currentItem] isPlaybackLikelyToKeepUp]) {
+        [self.eventListener videoPlayerDidEndBuffering];
       }
     }
   } else if (context == rateContext) {
@@ -358,11 +359,14 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
 /// playback should be active, seeks to the current position to force AVFoundation to re-buffer,
 /// which often allows it to select a higher-quality HLS rendition on the retry.
 - (void)scheduleStallRecovery {
+  _stallRecoveryGeneration++;
+  NSUInteger generation = _stallRecoveryGeneration;
   __weak typeof(self) weakSelf = self;
   dispatch_after(
       dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         typeof(self) strongSelf = weakSelf;
-        if (!strongSelf || strongSelf->_disposed || !strongSelf->_isPlaying ||
+        if (!strongSelf || strongSelf->_disposed ||
+            generation != strongSelf->_stallRecoveryGeneration || !strongSelf->_isPlaying ||
             !strongSelf->_isInitialized) {
           return;
         }
@@ -372,11 +376,7 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
           [strongSelf->_player seekToTime:currentTime
                         completionHandler:^(BOOL finished) {
                           if (finished && !strongSelf->_disposed && strongSelf->_isPlaying) {
-                            if (@available(iOS 10.0, macOS 10.12, *)) {
-                              [strongSelf->_player playImmediatelyAtRate:1.0];
-                            } else {
-                              [strongSelf->_player play];
-                            }
+                            [strongSelf resumePlaybackImmediately];
                           }
                         }];
         }
@@ -418,14 +418,37 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
       // AVPlayerAutomaticWaitingBehaviorMinimizeStalls, which makes HLS start at a low
       // rendition. Starting immediately allows AVFoundation to pick the highest
       // quality the network can sustain right now.
-      if (@available(iOS 10.0, macOS 10.12, *)) {
-        [_player playImmediatelyAtRate:1.0];
-      } else {
-        [_player play];
-      }
+      [self resumePlaybackImmediately];
     }
   } else {
     [_player pause];
+  }
+}
+
+/// Clamps the requested speed to the current item's fast/slow-forward capabilities when ready.
+- (float)clampedPlaybackSpeed:(float)speed forItem:(AVPlayerItem *)item {
+  if (item.status == AVPlayerItemStatusReadyToPlay) {
+    if (speed > 2.0 && !item.canPlayFastForward) {
+      speed = 2.0f;
+    }
+    if (speed < 1.0 && !item.canPlaySlowForward) {
+      speed = 1.0f;
+    }
+  }
+  return speed;
+}
+
+/// Resumes playback immediately, preserving [_targetPlaybackSpeed] when set.
+///
+/// Buffer-full and stall-recovery handlers must not hardcode 1.0x; that silently
+/// overrides user-selected speeds (e.g. 2x) without updating Dart state.
+- (void)resumePlaybackImmediately {
+  if (@available(iOS 10.0, macOS 10.12, *)) {
+    float speed = _targetPlaybackSpeed ? _targetPlaybackSpeed.floatValue : 1.0f;
+    speed = [self clampedPlaybackSpeed:speed forItem:_player.currentItem];
+    [_player playImmediatelyAtRate:speed];
+  } else {
+    [_player play];
   }
 }
 
@@ -439,20 +462,19 @@ NS_INLINE CGFloat radiansToDegrees(CGFloat radians) {
   // be played at these speeds, updatePlayingState will be called again when
   // status changes to AVPlayerItemStatusReadyToPlay.
   float speed = _targetPlaybackSpeed.floatValue;
-  BOOL readyToPlay = _player.currentItem.status == AVPlayerItemStatusReadyToPlay;
-  if (speed > 2.0 && !_player.currentItem.canPlayFastForward) {
+  AVPlayerItem *item = _player.currentItem;
+  BOOL readyToPlay = item.status == AVPlayerItemStatusReadyToPlay;
+  if (speed > 2.0 && !item.canPlayFastForward) {
     if (!readyToPlay) {
       return;
     }
-    speed = 2.0;
   }
-  if (speed < 1.0 && !_player.currentItem.canPlaySlowForward) {
+  if (speed < 1.0 && !item.canPlaySlowForward) {
     if (!readyToPlay) {
       return;
     }
-    speed = 1.0;
   }
-  _player.rate = speed;
+  _player.rate = [self clampedPlaybackSpeed:speed forItem:item];
 }
 
 - (void)sendFailedToLoadVideoEvent {
